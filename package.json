@@ -1,0 +1,21 @@
+{
+  "name": "WoT-Final",
+  "version": "0.0.1",
+  "description": "Final implementation of the WoT4BIGIoT Thesis project",
+  "dependencies": {
+    "@types/node": "^10.3.3",
+    "coap": "^0.21.0",
+    "express": "^4.16.2",
+    "node-datetime": "^2.0.6",
+    "rdfstore": "^0.9.17",
+    "request": "^2.85.0",
+    "sanitize-filename": "^1.6.1",
+    "typescript-eslint-parser": "^16.0.0",
+    "ws": "^5.1.1"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "((git clone https://github.com/eclipse/thingweb.node-wot.git && cd thingweb.node-wot) || (cd thingweb.node-wot && git pull)) && npm install && npm run build && cd .. && (git clone https://github.com/flowhub/bigiot-js.git || (cd bigiot-js && git pull))"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "history": {
+    "historyPeriod": 5,
+    "historyLimit": 1000
+  },
+  "market": {
+    "addPrices": false,
+    "defaultLicense": "CREATIVE_COMMONS",
+    "defaultPrice": {
+      "pricingModel": "FREE"
+    },
+    "defaultSpatialExtent": {
+      "city": "",
+      "boundary": {
+        "l1": {
+          "lat": 90,
+          "lng": 180
+        },
+        "l2": {
+          "lat": -90,
+          "lng": -180
+        }
+      }
+    }
+  },
+  "useMerge": true,
+  "useAggregate": true,
+  "useHistory": false,
+  "moreLogs": true
+}
