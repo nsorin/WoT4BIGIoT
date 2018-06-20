@@ -19,8 +19,8 @@ class Configuration {
                     this.useAggregate = body.useAggregate;
                     this.useHistory = body.useHistory;
                     // History config
-                    this.history.historyPeriod = body.history.historyPeriod;
-                    this.history.historyLimit = body.history.historyLimit;
+                    this.history.period = body.history.period;
+                    this.history.limit = body.history.limit;
                     //TODO: Other config
                     resolve();
                 }

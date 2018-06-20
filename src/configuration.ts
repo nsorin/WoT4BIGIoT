@@ -1,18 +1,24 @@
 import fs = require('fs');
 
 class HistoryConfig {
-    public historyPeriod;
-    public historyLimit;
+    public period: number;
+    public limit: number;
+}
+
+class GatewayConfig {
+    public host: string;
+    public port: number
 }
 
 export class Configuration {
 
-    public moreLogs;
-    public useMerge;
-    public useAggregate;
-    public useHistory;
+    public moreLogs: boolean;
+    public useMerge: boolean;
+    public useAggregate: boolean;
+    public useHistory: boolean;
 
     public history = new HistoryConfig();
+    public gateway = new GatewayConfig();
 
     constructor () {
         //TODO: Is there anything to do?
@@ -35,8 +41,12 @@ export class Configuration {
                     this.useHistory = body.useHistory;
 
                     // History config
-                    this.history.historyPeriod = body.history.historyPeriod;
-                    this.history.historyLimit = body.history.historyLimit;
+                    this.history.period = body.history.period;
+                    this.history.limit = body.history.limit;
+
+                    // Gateway config
+                    this.gateway.port = body.gateway.port;
+                    this.gateway.host = body.gateway.host;
 
                     //TODO: Other config
 

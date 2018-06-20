@@ -1,8 +1,10 @@
-import {Thing, Interaction, parseTDString} from "../thingweb.node-wot/packages/td-tools";
+import {Thing, parseTDString} from "../thingweb.node-wot/packages/td-tools";
 import {ThingAnalyzer} from "./thing-analyzer";
 import {Gateway} from "./gateway";
 import {OfferingManager} from "./offering-manager";
+import {OfferingConverter} from "./offering-converter";
 import {Configuration} from "./configuration";
+import {HistoryStore} from "./history-store";
 
 class Api {
 
@@ -12,6 +14,8 @@ class Api {
     private thingAnalyzer = new ThingAnalyzer(this.config);
     private gateway = new Gateway(this.config);
     private offeringManager = new OfferingManager(this.config);
+    private historyStore = new HistoryStore(this.config);
+    private offeringConverter = new OfferingConverter(this.config);
 
     private initComplete = false;
 

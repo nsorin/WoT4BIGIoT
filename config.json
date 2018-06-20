@@ -23,6 +23,10 @@
       }
     }
   },
+  "gateway": {
+    "host":"127.0.0.1",
+    "port": 8081
+  },
   "useMerge": true,
   "useAggregate": true,
   "useHistory": false,
