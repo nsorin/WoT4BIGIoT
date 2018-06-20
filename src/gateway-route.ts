@@ -259,6 +259,10 @@ export class GatewayRoute {
                 this.requests.push(thingRequests);
             }
         }
+
+        if (this.valid) {
+            // TODO: Schema and data conversion
+        }
     }
 
     /**
