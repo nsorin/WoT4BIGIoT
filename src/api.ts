@@ -1,4 +1,4 @@
-import {Thing, parseTDString} from "../thingweb.node-wot/packages/td-tools";
+import {Thing, parseTD} from "../thingweb.node-wot/packages/td-tools";
 import {ThingAnalyzer} from "./thing-analyzer";
 import {Gateway} from "./gateway";
 import {OfferingManager} from "./offering-manager";
@@ -44,41 +44,42 @@ class Api {
      * @param {Array<string>} tds JSON TDs (not parsed)
      * @return {Promise<any>}
      */
-    public registerThings(tds: Array<any>): Promise<any> {
-        return new Promise((resolve, reject) => {
-            if (!this.initComplete){
-                reject('Configuration not initialized!');
-            } else {
-                // Parse all things
-                let parsedThings: Array<Thing> = [];
-                for (let i = 0; i < tds.length; i++) {
-                    try {
-                        let thing = parseTDString(tds[i]);
-                        parsedThings.push(thing);
-                    } catch (e) {
-                        console.log('Could not parse thing at index', i, ':', e);
-                    }
+    public registerThings(tds: Array<any>) {
+        if (!this.initComplete) {
+            throw 'ERROR: Config not initialized!';
+        } else {
+            // Parse all things
+            let parsedThings: Array<Thing> = [];
+            for (let i = 0; i < tds.length; i++) {
+                try {
+                    let thing = parseTD(tds[i]);
+                    parsedThings.push(thing);
+                } catch (e) {
+                    console.log('Could not parse thing at index', i, ':', e);
                 }
-
-                let directRegistration: Array<Thing> = [];
-                let gatewayRegistration: Array<Thing> = [];
-                // Use parsed things
-                if (this.config.useMerge || this.config.useAggregate ||this.config.useHistory) {
-                    gatewayRegistration = parsedThings;
-                } else {
-                    // Sort compatible and non compatible things
-                    for (let i = 0; i < parsedThings.length; i++) {
-                        if (this.thingAnalyzer.isThingDirectlyCompatible(parsedThings[i])) {
-                            directRegistration.push(parsedThings[i]);
-                        } else {
-                            gatewayRegistration.push(parsedThings[i]);
-                        }
-                    }
-                }
-                this.registerThingsDirectly(directRegistration);
-                this.registerThingsWithGateway(gatewayRegistration);
             }
-        });
+            console.log('PARSED EVERYTHING:', parsedThings.length, 'THINGS');
+
+            let directRegistration: Array<Thing> = [];
+            let gatewayRegistration: Array<Thing> = [];
+            // Use parsed things
+            if (this.config.useMerge || this.config.useAggregate || this.config.useHistory) {
+                gatewayRegistration = parsedThings;
+            } else {
+                // Sort compatible and non compatible things
+                for (let i = 0; i < parsedThings.length; i++) {
+                    if (this.thingAnalyzer.isThingDirectlyCompatible(parsedThings[i])) {
+                        directRegistration.push(parsedThings[i]);
+                    } else {
+                        gatewayRegistration.push(parsedThings[i]);
+                    }
+                }
+            }
+            console.log(directRegistration.length, "things to register directly");
+            console.log(gatewayRegistration.length, "things to register with gateway");
+            this.registerThingsDirectly(directRegistration);
+            this.registerThingsWithGateway(gatewayRegistration);
+        }
     }
 
     /**
@@ -88,7 +89,7 @@ class Api {
      */
     public convertOfferings(offeringIds: Array<string>): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (!this.initComplete){
+            if (!this.initComplete) {
                 reject('Configuration not initialized!');
             } else {
                 // TODO
@@ -110,7 +111,28 @@ class Api {
      */
     private registerThingsWithGateway(things: Array<Thing>): void {
         this.gateway.init().then((gateway) => {
-            //TODO: Do stuff
+            if (this.config.useAggregate) {
+                // Identify identical things
+                let identicalThings: Array<Array<Thing>> = [];
+                for (let i = 0; i < things.length; i++) {
+                    let ok = false;
+                    for (let j = 0; j < identicalThings.length; j++) {
+                        if (this.thingAnalyzer.areThingsIdentical(identicalThings[j][0], things[i])) {
+                            identicalThings[j].push(things[i]);
+                            ok = true;
+                        }
+                    }
+                    if (!ok) {
+                        identicalThings.push([things[i]]);
+                    }
+                }
+                // Register things by type
+                for (let i = 0; i < identicalThings.length; i++) {
+                    this.gateway.addAggregatedThings(identicalThings[i]);
+                }
+            } else {
+                gateway.addSingleThings(things);
+            }
         });
     }
 }

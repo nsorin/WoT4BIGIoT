@@ -1,4 +1,5 @@
 import fs = require('fs');
+import path = require('path');
 
 class HistoryConfig {
     public period: number;
@@ -31,7 +32,7 @@ export class Configuration {
      */
     init(configSource) {
         return new Promise((resolve, reject) => {
-            fs.readFile(configSource, "utf-8", (err, data) => {
+            fs.readFile(path.resolve(__dirname, configSource), "utf-8", (err, data) => {
                 try {
                     let body = JSON.parse(data);
                     // Root config

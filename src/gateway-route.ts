@@ -25,8 +25,12 @@ class RequestToThing {
     private readonly sourceParams;
     private readonly sourceProtocol: Protocol;
     private readonly sourceMethod: Method;
+    private readonly sourceName: string;
+    private readonly sourceOutputSchema: any;
 
-    constructor(form: WoT.Form, verb: InteractionVerb) {
+    constructor(form: WoT.Form, verb: InteractionVerb, sourceOutputSchema: any, sourceName: string) {
+        this.sourceOutputSchema = sourceOutputSchema;
+        this.sourceName = sourceName;
         let url = form.href;
         // Guess protocol and method
         if (!url || url === "") {
@@ -79,6 +83,7 @@ class RequestToThing {
         } else if (this.sourceProtocol === Protocol.COAP) {
             this.sourceParams = urlParser.parse(url);
         }
+        // console.log('Created RequestToThing:', this);
     }
 
     /**
@@ -97,11 +102,13 @@ class RequestToThing {
                                 reject(err);
                             } else {
                                 try {
-                                    resolve(body && body !== "" ? JSON.parse(body) : {});
+                                    body = body && body !== "" ? JSON.parse(body) : {};
                                 } catch (e) {
                                     console.log('Warning: Body could not be parsed, returning raw output.');
-                                    resolve(body);
                                 }
+                                console.log('HTTP Get returned', body);
+                                resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
+                                    body, this.sourceName, true));
                             }
                         });
                         break;
@@ -112,11 +119,12 @@ class RequestToThing {
                                 reject(err);
                             } else {
                                 try {
-                                    resolve(body && body !== "" ? JSON.parse(body) : {});
+                                    body = body && body !== "" ? JSON.parse(body) : {};
                                 } catch (e) {
                                     console.log('Warning: Body could not be parsed, returning raw output.');
-                                    resolve(body);
                                 }
+                                resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
+                                    body, this.sourceName, true));
                             }
                         });
                         break;
@@ -127,11 +135,12 @@ class RequestToThing {
                                 reject(err);
                             } else {
                                 try {
-                                    resolve(body && body !== "" ? JSON.parse(body) : {});
+                                    body = body && body !== "" ? JSON.parse(body) : {};
                                 } catch (e) {
                                     console.log('Warning: Body could not be parsed, returning raw output.');
-                                    resolve(body);
                                 }
+                                resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
+                                    body, this.sourceName, true));
                             }
                         });
                         break;
@@ -144,15 +153,40 @@ class RequestToThing {
                 coapRq.on('response', (res) => {
                     let payload = res.payload.toString();
                     try {
-                        resolve(payload && payload !== "" ? JSON.parse(payload) : {});
+                        payload = payload && payload !== "" ? JSON.parse(payload) : {};
                     } catch (e) {
                         console.log('Warning: Payload could not be parsed, returning raw output.');
-                        resolve(payload);
                     }
+                    resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
+                        payload, this.sourceName, true));
                 });
                 coapRq.end();
             }
         });
+    }
+
+    private static convertOutputRecursive(schema: any, output: any, name, first) {
+        if (output === null) {
+            return {};
+        }
+        let returnValue = {};
+        let rdfType = schema['@type'];
+        if (rdfType && rdfType.length > 0 && rdfType[0] !== "") {
+            returnValue[name] = output;
+        } else if (schema.type === 'object') {
+            for (let i in schema.properties) {
+                if (schema.properties.hasOwnProperty(i)) {
+                    Object.assign(returnValue, RequestToThing.convertOutputRecursive(
+                        schema.properties[i],
+                        output[i],
+                        (first ? '' : name + GatewayRoute.LEVEL_SEPARATOR) + i, false));
+                }
+            }
+        } else {
+            returnValue[name] = output;
+        }
+        console.log('Conversion output is', returnValue);
+        return returnValue;
     }
 }
 
@@ -167,13 +201,13 @@ export class GatewayRoute {
      */
     public method: Method;
     /**
-     * Output schema to register in the offering
-     */
-    public convertedOutputSchema: any;
-    /**
      * Input schema to register in the offering
      */
     public convertedInputSchema: any;
+    /**
+     * Output schema to register in the offering
+     */
+    public convertedOutputSchema: any;
     /**
      * Is the route valid
      * @type {boolean}
@@ -185,18 +219,24 @@ export class GatewayRoute {
      */
     public registered = false;
     /**
-     * Function to use to convert the Offering's input to the Thing's schema
-     */
-    private inputConverter;
-    /**
-     * Function to use to convert the Thing's output to the Offering's schema
-     */
-    private outputConverter;
-    /**
      * Information required to make the requests to the Thing
      * @type {any[]}
      */
     private requests: Array<Array<RequestToThing>> = [];
+
+
+    private static readonly DEFAULT_DATA_TYPE = "http://schema.org/DataType";
+    private static readonly DATA_TYPE_CONVERSION = {
+        string: "http://schema.org/Text",
+        boolean: "http://schema.org/Boolean",
+        number: "http://schema.org/Number",
+        integer: "http://schema.org/Integer",
+        float: "http://schema.org/Float"
+    };
+    private static readonly DEFAULT_ARRAY_TYPE: "http://schema.org/ItemList";
+    private static readonly ID_FIELD = {name: "id", rdfUri: "http://schema.org/identifier"};
+
+    public static readonly LEVEL_SEPARATOR = "_";
 
     /**
      *
@@ -205,19 +245,19 @@ export class GatewayRoute {
      * @param {boolean} write
      * @param {number} actionIndex
      */
-    constructor(things: Array<Thing>, propertyIndexes: Array<number>, write?: boolean, actionIndex?: number) {
+    constructor(things: Array<Thing>, propertyIndexes: Array<string>, write?: boolean, actionIndex?: string) {
         // Set up URI and method
-        if (propertyIndexes.length === 0 && !isNaN(actionIndex)) {
+        if (propertyIndexes.length === 0 && actionIndex) {
             // No property and an action
             this.uri = sanitize(things[0].name + '-' + things[0].actions[actionIndex].label);
             this.method = Method.POST;
         } else if (propertyIndexes.length === 1) {
             // Read or write?
             if (write) {
-                this.uri = sanitize(things[0].name + '-Write-' + things[0].properties[propertyIndexes[0]].label);
+                this.uri = sanitize(things[0].name + '-Write-' + propertyIndexes[0]);
                 this.method = Method.POST; // Should use PUT once the marketplace supports it
             } else {
-                this.uri = sanitize(things[0].name + '-Read-' + things[0].properties[propertyIndexes[0]].label);
+                this.uri = sanitize(things[0].name + '-Read-' + propertyIndexes[0]);
                 this.method = Method.GET;
             }
         } else if (propertyIndexes.length > 1) {
@@ -232,14 +272,15 @@ export class GatewayRoute {
         if (this.valid) {
             for (let i = 0; i < things.length; i++) {
                 let thingRequests: Array<RequestToThing> = [];
-                if (isNaN(actionIndex)) {
+                if (!actionIndex) {
                     // In this case, properties are registered
                     for (let j = 0; j < propertyIndexes.length; j++) {
                         let property = things[i].properties[propertyIndexes[j]];
-                        let verb = write? InteractionVerb.WRITE : InteractionVerb.READ;
+                        let verb = write ? InteractionVerb.WRITE : InteractionVerb.READ;
                         let form = this.getRelevantForm(property.forms, verb);
                         if (form) {
-                            thingRequests.push(new RequestToThing(form, verb));
+                            thingRequests.push(new RequestToThing(form, verb, write ?
+                                null : property, propertyIndexes[j]));
                         } else {
                             console.log('ERROR: Invalid interactions provided, no route can be created!');
                             this.valid = false;
@@ -250,7 +291,7 @@ export class GatewayRoute {
                     let action = things[i].actions[actionIndex];
                     let form = this.getRelevantForm(action.forms, InteractionVerb.INVOKE);
                     if (form) {
-                         thingRequests.push(new RequestToThing(form, InteractionVerb.INVOKE));
+                        thingRequests.push(new RequestToThing(form, InteractionVerb.INVOKE, action.output, actionIndex));
                     } else {
                         console.log('ERROR: Invalid interactions provided, no route can be created!');
                         this.valid = false;
@@ -261,8 +302,37 @@ export class GatewayRoute {
         }
 
         if (this.valid) {
-            // TODO: Schema and data conversion
+            if (actionIndex) {
+                // Convert the input schema for the action. Use first thing as reference since they are identical.
+                this.convertedInputSchema = this.convertSchemaRecursive(things[0].actions[actionIndex].input,
+                    actionIndex, things[0]['@context'], true);
+                // Convert the output schema for the action. Use first thing as reference since they are identical.
+                this.convertedOutputSchema = this.convertSchemaRecursive(things[0].actions[actionIndex].output,
+                    actionIndex, things[0]['@context'], true);
+            } else {
+                if (write) {
+                    // Can only write one property at once
+                    this.convertedInputSchema = this.convertSchemaRecursive(things[0].properties[propertyIndexes[0]],
+                        propertyIndexes[0], things[0]['@context'], true);
+                    // No output in this case
+                    this.convertedOutputSchema = [];
+                } else {
+                    // Non base input in this case. ID when aggregating is added later.
+                    this.convertedInputSchema = [];
+                    this.convertedOutputSchema = things.length > 1 ? [GatewayRoute.ID_FIELD] : [];
+                    for (let i = 0; i < propertyIndexes.length; i++) {
+                        this.convertedOutputSchema = this.convertedOutputSchema.concat(
+                            this.convertSchemaRecursive(things[0].properties[propertyIndexes[i]],
+                                propertyIndexes[i], things[0]['@context'], true));
+                    }
+                }
+            }
+            // If aggregating, add id as input field.
+            if (things.length > 1) {
+                this.convertedInputSchema.push(GatewayRoute.ID_FIELD);
+            }
         }
+        // console.log('Created GatewayRoute:', this);
     }
 
     /**
@@ -272,71 +342,70 @@ export class GatewayRoute {
      * @return {Promise<any>}
      */
     public access(params: any, id?: number): Promise<any> {
+        console.log('Accessing GatewayRoute', this.uri);
         return new Promise((resolve, reject) => {
             if (!this.valid) {
                 reject('Route is invalid, cannot be used.');
             } else {
                 // Prepare input parameters to fit the Thing's expected schema
-                this.inputConverter(params).then((input) => {
-                    if (input) {
-                        input = typeof input === 'object' ? JSON.stringify(input) : input;
-                    }
-                    // Use id if valid
-                    if (this.requests.length > 1 && !isNaN(id)) {
-                        if (id < this.requests.length) {
-                            // Prepare promise array in case multiple requests have to be made
-                            let promises: Array<Promise<any>> = [];
-                            for (let i = 0; i < this.requests[id].length; i++) {
-                                // For each required request, add the request to the promise array
-                                promises.push(this.requests[id][i].makeRequest(input).then((output) => {
-                                    return this.outputConverter(output);
-                                }));
-                            }
-                            // Once all request have a response, unwrap the output and resolve it
-                            Promise.all(promises).then((outputValues) => {
-                                let final = {};
-                                for (let i = 0; i < outputValues.length; i++) {
-                                    Object.assign(final, outputValues[i]);
-                                }
-                                resolve([final]);
-                            });
-                        } else {
-                            reject('Invalid id provided');
+                let input = this.convertInput(params);
+                if (input) {
+                    input = typeof input === 'object' ? JSON.stringify(input) : input;
+                }
+                // Use id if valid
+                if (this.requests.length > 1 && !isNaN(id)) {
+                    if (id < this.requests.length) {
+                        // Prepare promise array in case multiple requests have to be made
+                        let promises: Array<Promise<any>> = [];
+                        for (let i = 0; i < this.requests[id].length; i++) {
+                            // For each required request, add the request to the promise array
+                            promises.push(this.requests[id][i].makeRequest(input));
                         }
-                    } else {
-                        // For each Thing, get all the desired interactions
-                        let finalPromises: Array<Promise<any>> = [];
-                        for (let i = 0; i < this.requests.length; i++) {
-                            let promises: Array<Promise<any>> = [];
-                            for (let j = 0; j < this.requests[i].length; j++) {
-                                promises.push(this.requests[id][i].makeRequest(input).then((output) => {
-                                    return this.outputConverter(output);
-                                }));
-                                finalPromises.push(Promise.all(promises));
-                            }
-                        }
-                        // Once all requests have a response, unwrap the output and resolve it
-                        let finalArray = [];
-                        Promise.all(finalPromises).then((outputValues) => {
-                            // First layer: each value contains the values for one thing.
+                        // Once all request have a response, unwrap the output and resolve it
+                        Promise.all(promises).then((outputValues) => {
+                            let final: any = {};
                             for (let i = 0; i < outputValues.length; i++) {
-                                let finalObject: any = {};
-                                // Second layer: each value contains the values for one interaction in one Thing
-                                for (let j = 0; j < outputValues[i].length; j++) {
-                                    // Each Thing has a merged object for all its Interactions
-                                    Object.assign(finalObject, outputValues[i][j]);
-                                }
-                                // Add the id if needed
-                                if (outputValues.length > 1) {
-                                    finalObject.id = i;
-                                }
-                                // The final output is an array with an item for each Thing
-                                finalArray.push(finalObject);
+                                Object.assign(final, outputValues[i]);
                             }
-                            resolve(finalArray);
+                            final.id = Number(id);
+                            resolve([final]);
                         });
+                    } else {
+                        reject('Invalid id provided');
                     }
-                });
+                } else {
+                    // For each Thing, get all the desired interactions
+                    let finalPromises: Array<Promise<any>> = [];
+                    for (let i = 0; i < this.requests.length; i++) {
+                        let promises: Array<Promise<any>> = [];
+                        for (let j = 0; j < this.requests[i].length; j++) {
+                            promises.push(this.requests[i][j].makeRequest(input));
+                        }
+                        finalPromises.push(Promise.all(promises));
+                    }
+                    // Once all requests have a response, unwrap the output and resolve it
+                    let finalArray = [];
+                    Promise.all(finalPromises).then((outputValues) => {
+                        console.log('All promises resolved with output:', outputValues);
+                        // First layer: each value contains the values for one thing.
+                        for (let i = 0; i < outputValues.length; i++) {
+                            let finalObject: any = {};
+                            // Second layer: each value contains the values for one interaction in one Thing
+                            for (let j = 0; j < outputValues[i].length; j++) {
+                                // Each Thing has a merged object for all its Interactions
+                                Object.assign(finalObject, outputValues[i][j]);
+                            }
+                            // Add the id if needed
+                            if (outputValues.length > 1) {
+                                finalObject.id = i;
+                            }
+                            // The final output is an array with an item for each Thing
+                            finalArray.push(finalObject);
+                        }
+                        console.log('Final array is', finalArray);
+                        resolve(finalArray);
+                    });
+                }
             }
         });
     }
@@ -357,5 +426,90 @@ export class GatewayRoute {
             }
         }
         return form;
+    }
+
+    private convertSchemaRecursive(property: any, name: string, context: any, first: boolean) {
+        if (!property) {
+            return [];
+        }
+        let newSchema = [];
+        let rdfType = property['@type'];
+        if (rdfType && rdfType.length > 0 && rdfType[0] !== "") {
+            newSchema = [{
+                name: name,
+                rdfUri: GatewayRoute.replacePrefix(rdfType[0], context)
+            }];
+        } else if (property.type === 'object') {
+            for (let i in property['properties']) {
+                if (property['properties'].hasOwnProperty(i)) {
+                    newSchema = newSchema.concat(this.convertSchemaRecursive(
+                        property['properties'][i], (first ? '' : name + GatewayRoute.LEVEL_SEPARATOR) + i,
+                        context, false));
+                }
+            }
+        } else if (property.type === 'array') {
+            newSchema = [{
+                name: name,
+                rdfUri: GatewayRoute.DEFAULT_ARRAY_TYPE
+            }];
+        } else {
+            let semanticType = GatewayRoute.DATA_TYPE_CONVERSION[property.type];
+            if (semanticType) {
+                newSchema = [{
+                    name: name,
+                    rdfUri: semanticType
+                }];
+            } else {
+                newSchema = [{
+                    name: name,
+                    rdfUri: GatewayRoute.DEFAULT_DATA_TYPE
+                }];
+                console.log('Warning: input field ', name, ' has no known type. Default type used.');
+            }
+        }
+        return newSchema;
+    }
+
+    private convertInput(input: any) {
+        // TODO Handle underscore in original name
+        let result = {};
+        for (let key in input) {
+            if (input.hasOwnProperty(key) && this.fieldExistsInConvertedSchema(key, true)) {
+                let levels = key.split(GatewayRoute.LEVEL_SEPARATOR);
+                for (let i = 0; i < levels.length; i++) {
+                    let currentLevel = result;
+                    if (i === levels.length - 1) {
+                        currentLevel[levels[i]] = input[key];
+                    } else if (result.hasOwnProperty(levels[i])) {
+                        currentLevel = currentLevel[levels[i]];
+                    } else {
+                        currentLevel[levels[i]] = {};
+                        currentLevel = currentLevel[levels[i]];
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private fieldExistsInConvertedSchema(fieldName: string, input: boolean): boolean {
+        let schema = input? this.convertedInputSchema : this.convertedOutputSchema;
+        for (let i = 0; i < schema.length; i++) {
+            if (schema[i].name === fieldName) return true;
+        }
+        return false;
+    }
+
+    private static replacePrefix(prefixed, context) {
+        if (/^.+:[^, \\/]+.$/.test(prefixed)) {
+            let prefix = prefixed.match(new RegExp('^[^, :\\/]+:'))[0];
+            let key = prefix.substring(0, prefix.length - 1);
+            for (let i = 0; i < context.length; i++) {
+                if (typeof context[i] === 'object' && context[i].hasOwnProperty(key)) {
+                    return prefixed.replace(prefix, context[i][key] + (context[i][key].slice(-1) === "/" ? '' : '#'));
+                }
+            }
+        }
+        return prefixed;
     }
 }

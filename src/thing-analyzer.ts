@@ -1,5 +1,4 @@
 import {Thing} from "../thingweb.node-wot/packages/td-tools";
-import WoT from "../thingweb.node-wot/packages/td-tools/node_modules/wot-typescript-definitions";
 import {Configuration} from "./configuration";
 
 export class ThingAnalyzer {
@@ -37,12 +36,16 @@ export class ThingAnalyzer {
         return true;
     }
 
+    public areThingsIdentical(thing1: Thing, thing2: Thing): boolean {
+        return true;
+    }
+
     /**
      * Check if a Property is compatible with the Offering model.
      * @param {ThingProperty} property
      * @return {boolean}
      */
-    private isPropertyDirectlyCompatible(property: WoT.ThingProperty): boolean {
+    private isPropertyDirectlyCompatible(property: any): boolean {
         // Check forms: At least one should be compatible
         let formsOk = false;
         for (let i = 0; i < property.forms.length; i++) {
@@ -61,7 +64,7 @@ export class ThingAnalyzer {
      * @param {ThingAction} action
      * @return {boolean}
      */
-    private isActionDirectlyCompatible(action: WoT.ThingAction): boolean {
+    private isActionDirectlyCompatible(action: any): boolean {
         // Check forms: At least one should be compatible
         let formsOk = false;
         for (let i = 0; i < action.forms.length; i++) {
@@ -96,8 +99,8 @@ export class ThingAnalyzer {
             if (this.config.moreLogs) console.log('Output is not an array: no direct compatibility!');
             return false;
         }
-        for (let i = 0; i < schema['items'].properties.length; i++) {
-            let field = schema['items'].properties[i];
+        for (let i = 0; i < schema['items']['properties'].length; i++) {
+            let field = schema['items']['properties'][i];
             if (field.schema.type === 'object' || field.schema.type === 'array') {
                 if (this.config.moreLogs) console.log('An output field has a complex type: no direct compatibility! (field:', field.name, ')');
                 return false;
@@ -111,7 +114,7 @@ export class ThingAnalyzer {
      * @param {DataSchema} schema
      * @return {boolean}
      */
-    private isInputSchemaCompatible(schema: WoT.DataSchema): boolean {
+    private isInputSchemaCompatible(schema: any): boolean {
         if (!schema) return true;
         if (schema.type !== 'object') {
             if (this.config.moreLogs) console.log('Input is not an object: no direct compatibility!');
