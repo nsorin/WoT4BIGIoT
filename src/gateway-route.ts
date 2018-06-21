@@ -108,7 +108,7 @@ class RequestToThing {
                                 }
                                 console.log('HTTP Get returned', body);
                                 resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
-                                    body, this.sourceName, true));
+                                    body, this.sourceName));
                             }
                         });
                         break;
@@ -124,7 +124,7 @@ class RequestToThing {
                                     console.log('Warning: Body could not be parsed, returning raw output.');
                                 }
                                 resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
-                                    body, this.sourceName, true));
+                                    body, this.sourceName));
                             }
                         });
                         break;
@@ -140,7 +140,7 @@ class RequestToThing {
                                     console.log('Warning: Body could not be parsed, returning raw output.');
                                 }
                                 resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
-                                    body, this.sourceName, true));
+                                    body, this.sourceName));
                             }
                         });
                         break;
@@ -158,14 +158,14 @@ class RequestToThing {
                         console.log('Warning: Payload could not be parsed, returning raw output.');
                     }
                     resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
-                        payload, this.sourceName, true));
+                        payload, this.sourceName));
                 });
                 coapRq.end();
             }
         });
     }
 
-    private static convertOutputRecursive(schema: any, output: any, name, first) {
+    private static convertOutputRecursive(schema: any, output: any, name) {
         if (output === null) {
             return {};
         }
@@ -179,7 +179,7 @@ class RequestToThing {
                     Object.assign(returnValue, RequestToThing.convertOutputRecursive(
                         schema.properties[i],
                         output[i],
-                        (first ? '' : name + GatewayRoute.LEVEL_SEPARATOR) + i, false));
+                        name + GatewayRoute.LEVEL_SEPARATOR + i));
                 }
             }
         } else {
