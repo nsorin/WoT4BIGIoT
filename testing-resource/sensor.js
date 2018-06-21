@@ -18,7 +18,7 @@ srv.start().then((wot) => {
 
     thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 50, '@type': ['schema:latitude']})
         .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 10, '@type': ['schema:longitude']})
-        .addProperty('position', {writable: false, type: "object", const: true, label: 'Longitude', value: {latitude: 40, longitude: 5},
+        .addProperty('position', {writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 25, longitude: 5},
             properties: {
                 latitude: {type: "number", '@type': ['schema:latitude']},
                 longitude: {type: "number", '@type': ['schema:longitude']},
@@ -36,9 +36,9 @@ srv2.start().then((wot) => {
 
     thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
 
-    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 48, '@type': ['schema:latitude']})
-        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 10, '@type': ['schema:longitude']})
-        .addProperty('position', {writable: false, type: "object", const: true, label: 'Longitude', value: {latitude: 38, longitude: 5},
+    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 40, '@type': ['schema:latitude']})
+        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 20, '@type': ['schema:longitude']})
+        .addProperty('position', {writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 20, longitude: 10},
             properties: {
                 latitude: {type: "number", '@type': ['schema:latitude']},
                 longitude: {type: "number", '@type': ['schema:longitude']},
@@ -56,9 +56,9 @@ srv3.start().then((wot) => {
 
     thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
 
-    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 49, '@type': ['schema:latitude']})
-        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 10, '@type': ['schema:longitude']})
-        .addProperty('position', {writable: false, type: "object", const: true, label: 'Longitude', value: {latitude: 39, longitude: 5},
+    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 20, '@type': ['schema:latitude']})
+        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 40, '@type': ['schema:longitude']})
+        .addProperty('position', {writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 10, longitude: 5},
             properties: {
                 latitude: {type: "number", '@type': ['schema:latitude']},
                 longitude: {type: "number", '@type': ['schema:longitude']},

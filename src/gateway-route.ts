@@ -26,9 +26,11 @@ class RequestToThing {
     private readonly sourceProtocol: Protocol;
     private readonly sourceMethod: Method;
     private readonly sourceName: string;
+    private readonly sourceInputSchema: any;
     private readonly sourceOutputSchema: any;
 
-    constructor(form: WoT.Form, verb: InteractionVerb, sourceOutputSchema: any, sourceName: string) {
+    constructor(form: WoT.Form, verb: InteractionVerb, sourceInputSchema: any, sourceOutputSchema: any, sourceName: string) {
+        this.sourceInputSchema = sourceInputSchema;
         this.sourceOutputSchema = sourceOutputSchema;
         this.sourceName = sourceName;
         let url = form.href;
@@ -92,6 +94,12 @@ class RequestToThing {
      * @return {Promise<any>}
      */
     public makeRequest(params: any): Promise<any> {
+        console.log('Original input:', params);
+        let input = RequestToThing.convertInputRecursive(this.sourceInputSchema, params, this.sourceName);
+        if (input) {
+            input = typeof input === 'object' ? JSON.stringify(input) : input;
+        }
+        console.log('Converted input:', input);
         return new Promise((resolve, reject) => {
             if (this.sourceProtocol === Protocol.HTTP) {
                 switch (this.sourceMethod) {
@@ -113,7 +121,8 @@ class RequestToThing {
                         });
                         break;
                     case Method.POST:
-                        request.post(this.sourceParams, (err, res, body) => {
+                        let httpPostParams = Object.assign({body: input}, this.sourceParams);
+                        request.post(httpPostParams, (err, res, body) => {
                             if (err || (res.statusCode !== 200 && res.statusCode !== 204)) {
                                 console.log('Failed to POST with params', this.sourceParams);
                                 reject(err);
@@ -129,7 +138,8 @@ class RequestToThing {
                         });
                         break;
                     case Method.PUT:
-                        request.put(this.sourceParams, (err, res, body) => {
+                        let httpPutParams = Object.assign({body: input}, this.sourceParams);
+                        request.put(httpPutParams, (err, res, body) => {
                             if (err || (res.statusCode !== 200 && res.statusCode !== 204)) {
                                 console.log('Failed to PUT with params', this.sourceParams);
                                 reject(err);
@@ -148,7 +158,7 @@ class RequestToThing {
             } else if (this.sourceProtocol === Protocol.COAP) {
                 let coapRq = coap.request(this.sourceParams);
                 if (this.sourceMethod === Method.POST || this.sourceMethod === Method.PUT) {
-                    coapRq.write(params);
+                    coapRq.write(input);
                 }
                 coapRq.on('response', (res) => {
                     let payload = res.payload.toString();
@@ -165,8 +175,45 @@ class RequestToThing {
         });
     }
 
+    private static convertInputRecursive(schema: any, input: any, name) {
+        if (!schema || !input) {
+            return undefined;
+        }
+        let newInput = {};
+        if (input[name] && input.length === 1) {
+            // There is only one input, send it back
+            return input[name];
+        }
+        let rdfType = schema['@type'];
+        if (rdfType && rdfType.length > 0 && rdfType[0] !== "") {
+            // There is a RDFType: the input
+            newInput = input[name];
+        } else if (schema.type === 'object') {
+            for (let i in schema.properties) {
+                if (schema.properties.hasOwnProperty(i)) {
+                    // Put all inputs starting with the name + name of the properties into an additional level
+                    // Potential bug if inputSchema includes _ and similar names
+                    let parentStart = name + GatewayRoute.LEVEL_SEPARATOR;
+                    let startsWith = parentStart + i;
+                    for (let key in input) {
+                        if (input.hasOwnProperty(key) && (key === startsWith || key.startsWith(startsWith + GatewayRoute.LEVEL_SEPARATOR))) {
+                            let newKey = key.replace(parentStart, '');
+                            newInput[newKey] = input[key];
+                            delete input[key];
+                        }
+                    }
+                    newInput[i] = RequestToThing.convertInputRecursive(schema.properties[i], newInput, i);
+
+                }
+            }
+        } else {
+            newInput = input[name];
+        }
+        return newInput;
+    }
+
     private static convertOutputRecursive(schema: any, output: any, name) {
-        if (output === null) {
+        if (!schema || (!output && output !== 0)) {
             return {};
         }
         let returnValue = {};
@@ -279,8 +326,8 @@ export class GatewayRoute {
                         let verb = write ? InteractionVerb.WRITE : InteractionVerb.READ;
                         let form = this.getRelevantForm(property.forms, verb);
                         if (form) {
-                            thingRequests.push(new RequestToThing(form, verb, write ?
-                                null : property, propertyIndexes[j]));
+                            thingRequests.push(new RequestToThing(form, verb, write ? property : null,
+                                write ? null : property, propertyIndexes[j]));
                         } else {
                             console.log('ERROR: Invalid interactions provided, no route can be created!');
                             this.valid = false;
@@ -291,7 +338,7 @@ export class GatewayRoute {
                     let action = things[i].actions[actionIndex];
                     let form = this.getRelevantForm(action.forms, InteractionVerb.INVOKE);
                     if (form) {
-                        thingRequests.push(new RequestToThing(form, InteractionVerb.INVOKE, action.output, actionIndex));
+                        thingRequests.push(new RequestToThing(form, InteractionVerb.INVOKE, action.input, action.output, actionIndex));
                     } else {
                         console.log('ERROR: Invalid interactions provided, no route can be created!');
                         this.valid = false;
@@ -347,11 +394,6 @@ export class GatewayRoute {
             if (!this.valid) {
                 reject('Route is invalid, cannot be used.');
             } else {
-                // Prepare input parameters to fit the Thing's expected schema
-                let input = this.convertInput(params);
-                if (input) {
-                    input = typeof input === 'object' ? JSON.stringify(input) : input;
-                }
                 // Use id if valid
                 if (this.requests.length > 1 && !isNaN(id)) {
                     if (id < this.requests.length) {
@@ -359,7 +401,7 @@ export class GatewayRoute {
                         let promises: Array<Promise<any>> = [];
                         for (let i = 0; i < this.requests[id].length; i++) {
                             // For each required request, add the request to the promise array
-                            promises.push(this.requests[id][i].makeRequest(input));
+                            promises.push(this.requests[id][i].makeRequest(params));
                         }
                         // Once all request have a response, unwrap the output and resolve it
                         Promise.all(promises).then((outputValues) => {
@@ -367,7 +409,10 @@ export class GatewayRoute {
                             for (let i = 0; i < outputValues.length; i++) {
                                 Object.assign(final, outputValues[i]);
                             }
-                            final.id = Number(id);
+                            if (Object.keys(final).length > 0) {
+                                // If there is no output, no need to add id
+                                final.id = Number(id);
+                            }
                             resolve([final]);
                         });
                     } else {
@@ -379,7 +424,7 @@ export class GatewayRoute {
                     for (let i = 0; i < this.requests.length; i++) {
                         let promises: Array<Promise<any>> = [];
                         for (let j = 0; j < this.requests[i].length; j++) {
-                            promises.push(this.requests[i][j].makeRequest(input));
+                            promises.push(this.requests[i][j].makeRequest(params));
                         }
                         finalPromises.push(Promise.all(promises));
                     }
@@ -471,6 +516,7 @@ export class GatewayRoute {
     }
 
     private convertInput(input: any) {
+        console.log('Received input is:', input);
         // TODO Handle underscore in original name
         let result = {};
         for (let key in input) {
@@ -493,7 +539,7 @@ export class GatewayRoute {
     }
 
     private fieldExistsInConvertedSchema(fieldName: string, input: boolean): boolean {
-        let schema = input? this.convertedInputSchema : this.convertedOutputSchema;
+        let schema = input ? this.convertedInputSchema : this.convertedOutputSchema;
         for (let i = 0; i < schema.length; i++) {
             if (schema[i].name === fieldName) return true;
         }

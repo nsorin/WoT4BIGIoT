@@ -14,7 +14,7 @@
     "ws": "^5.1.1"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --noResolve",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "((git clone https://github.com/eclipse/thingweb.node-wot.git && cd thingweb.node-wot) || (cd thingweb.node-wot && git pull)) && npm install && npm run build && cd .. && (git clone https://github.com/flowhub/bigiot-js.git || (cd bigiot-js && git pull))"
   }

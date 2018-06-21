@@ -101,6 +101,7 @@ export class Gateway {
                     this.app.get('/' + this.routes[i].uri, (req, res) => {
                         // TODO: Prepare req to separate id and params
                         let id = req.query ? req.query.id : null;
+                        delete req.query.id;
                         this.routes[i].access(req.query, id).then((result) => {
                             res.send(result);
                         });
@@ -109,6 +110,7 @@ export class Gateway {
                     this.app.post('/' + this.routes[i].uri, (req, res) => {
                         // TODO: Prepare req to separate id and params
                         let id = req.body ? req.body.id : null;
+                        delete req.body.id;
                         this.routes[i].access(req.body, id).then((result) => {
                             res.send(result);
                         });
