@@ -36,8 +36,74 @@ export class ThingAnalyzer {
         return true;
     }
 
+    /**
+     * Compare two things to see if they can be aggregated together.
+     * @param {Thing} thing1
+     * @param {Thing} thing2
+     * @return {boolean}
+     */
     public areThingsIdentical(thing1: Thing, thing2: Thing): boolean {
-        // TODO: COMPARE THINGS
+        return thing1.name === thing2.name
+            // Exactly same interactions
+            && Object.keys(thing1.properties).length === Object.keys(thing2.properties).length
+            && Object.keys(thing1.actions).length === Object.keys(thing2.actions).length
+            && this.areInteractionsIdentical(thing1.properties, thing2.properties)
+            && this.areInteractionsIdentical(thing1.actions, thing2.actions)
+            && this.areSemanticTypesIdentical(thing1['@type'], thing2['@type']);
+    }
+
+    /**
+     * Compares two maps of interactions to see if they are identical.
+     * @param interactions1
+     * @param interactions2
+     * @return {boolean}
+     */
+    private areInteractionsIdentical(interactions1: any, interactions2: any): boolean {
+        for (let key in interactions1) {
+            if (interactions1.hasOwnProperty(key) && interactions2.hasOwnProperty(key)) {
+                if (JSON.stringify(interactions1[key].input) !== JSON.stringify(interactions2[key].input)
+                    || JSON.stringify(interactions1[key].output) !== JSON.stringify(interactions2[key].output)
+                    || interactions1[key].type !== interactions2[key].type
+                    || interactions1[key].writable !== interactions2[key].writable
+                    || interactions1[key].observable !== interactions2[key].observable
+                    || interactions1[key].const !== interactions2[key].const
+                    // Semantic types
+                    || !this.areSemanticTypesIdentical(interactions1[key]['@type'], interactions2[key]['@type'])
+                ) {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Compare two arrays of semantic types to see if they are identical.
+     * @param {Array<string>} types1
+     * @param {Array<string>} types2
+     * @return {boolean}
+     */
+    private areSemanticTypesIdentical(types1: string | Array<string>, types2: string | Array<string>) : boolean {
+        if (typeof types1 !== typeof types1) {
+            return false;
+        }
+        if (types1 && types2) {
+            if (Array.isArray(types1) && Array.isArray(types2)) {
+                if (types1.length !== types2.length) {
+                    return false;
+                }
+                for (let i = 0; i < types1.length; i++) {
+                    if (types2.indexOf(types1[i]) === -1) {
+                        return false;
+                    }
+                }
+            } else {
+                return types1 === types2;
+            }
+        }
         return true;
     }
 

@@ -128,13 +128,12 @@ class Api {
                     }
                 }
                 // Register things by type
+                let alreadyUsedNames: Array<string> = [];
                 for (let i = 0; i < identicalThings.length; i++) {
 
                     // Rename duplicates
-                    let alreadyUsedNames: Array<string> = [];
                     let fakeIndex = 0;
                     while (alreadyUsedNames.indexOf(identicalThings[i][0].name) > -1) {
-                        console.log('Current thing name:', identicalThings[i][0].name, 'is already in use.');
                         let fakeIndexString = String(fakeIndex);
                         if (fakeIndex === 0) {
                             identicalThings[i][0].name = identicalThings[i][0].name + (++fakeIndex);
