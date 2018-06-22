@@ -296,7 +296,7 @@ export class GatewayRoute {
         // Set up URI and method
         if (propertyIndexes.length === 0 && actionIndex) {
             // No property and an action
-            this.uri = sanitize(things[0].name + '-' + things[0].actions[actionIndex].label);
+            this.uri = sanitize(things[0].name + '-' + actionIndex);
             this.method = Method.POST;
         } else if (propertyIndexes.length === 1) {
             // Read or write?
@@ -353,9 +353,11 @@ export class GatewayRoute {
                 // Convert the input schema for the action. Use first thing as reference since they are identical.
                 this.convertedInputSchema = this.convertSchemaRecursive(things[0].actions[actionIndex].input,
                     actionIndex, things[0]['@context'], true);
+                console.log('Converted input schema is', this.convertedInputSchema);
                 // Convert the output schema for the action. Use first thing as reference since they are identical.
                 this.convertedOutputSchema = this.convertSchemaRecursive(things[0].actions[actionIndex].output,
                     actionIndex, things[0]['@context'], true);
+                console.log('Converted output schema is', this.convertedOutputSchema);
             } else {
                 if (write) {
                     // Can only write one property at once

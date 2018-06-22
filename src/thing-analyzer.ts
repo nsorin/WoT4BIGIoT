@@ -37,6 +37,7 @@ export class ThingAnalyzer {
     }
 
     public areThingsIdentical(thing1: Thing, thing2: Thing): boolean {
+        // TODO: COMPARE THINGS
         return true;
     }
 

@@ -16,13 +16,26 @@ srv.start().then((wot) => {
 
     thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
 
-    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 50, '@type': ['schema:latitude']})
-        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 10, '@type': ['schema:longitude']})
-        .addProperty('position', {writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 25, longitude: 5},
-            properties: {
-                latitude: {type: "number", '@type': ['schema:latitude']},
-                longitude: {type: "number", '@type': ['schema:longitude']},
-            }
+    thing.addProperty('status', {
+        writable: false,
+        type: "string",
+        const: false,
+        label: 'ON/OFF Status',
+        value: "OFF"
+    }).addProperty('position', {
+        writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 25, longitude: 5},
+        properties: {
+            latitude: {type: "number", '@type': ['schema:latitude']},
+            longitude: {type: "number", '@type': ['schema:longitude']},
+        }
+    }).addAction('toggle', {input: {type: "boolean"}, output: {type: "string"}})
+        .setActionHandler('toggle', (params) => {
+            return new Promise((resolve, reject) => {
+                let status = params === 'true' || Number(params) === 1 ? 'ON' : 'OFF';
+                thing.properties['status'].set(status).then(() => {
+                    resolve(status);
+                });
+            });
         });
     thing.expose();
 });
@@ -36,13 +49,26 @@ srv2.start().then((wot) => {
 
     thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
 
-    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 40, '@type': ['schema:latitude']})
-        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 20, '@type': ['schema:longitude']})
-        .addProperty('position', {writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 20, longitude: 10},
-            properties: {
-                latitude: {type: "number", '@type': ['schema:latitude']},
-                longitude: {type: "number", '@type': ['schema:longitude']},
-            }
+    thing.addProperty('status', {
+        writable: false,
+        type: "string",
+        const: false,
+        label: 'ON/OFF Status',
+        value: "OFF"
+    }).addProperty('position', {
+        writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 20, longitude: 10},
+        properties: {
+            latitude: {type: "number", '@type': ['schema:latitude']},
+            longitude: {type: "number", '@type': ['schema:longitude']},
+        }
+    }).addAction('toggle', {input: {type: "boolean"}, output: {type: "string"}})
+        .setActionHandler('toggle', (params) => {
+            return new Promise((resolve, reject) => {
+                let status = params === 'true' || Number(params) === 1 ? 'ON' : 'OFF';
+                thing.properties['status'].set(status).then(() => {
+                    resolve(status);
+                });
+            });
         });
     thing.expose();
 });
@@ -56,13 +82,26 @@ srv3.start().then((wot) => {
 
     thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
 
-    thing.addProperty('latitude', {writable: false, type: "number", const: true, label: 'Latitude', value: 20, '@type': ['schema:latitude']})
-        .addProperty('longitude', {writable: false, type: "number", const: true, label: 'Longitude', value: 40, '@type': ['schema:longitude']})
-        .addProperty('position', {writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 10, longitude: 5},
-            properties: {
-                latitude: {type: "number", '@type': ['schema:latitude']},
-                longitude: {type: "number", '@type': ['schema:longitude']},
-            }
+    thing.addProperty('status', {
+        writable: false,
+        type: "string",
+        const: false,
+        label: 'ON/OFF Status',
+        value: "OFF"
+    }).addProperty('position', {
+        writable: true, type: "object", const: false, label: 'Longitude', value: {latitude: 10, longitude: 5},
+        properties: {
+            latitude: {type: "number", '@type': ['schema:latitude']},
+            longitude: {type: "number", '@type': ['schema:longitude']},
+        }
+    }).addAction('toggle', {input: {type: "boolean"}, output: {type: "string"}})
+        .setActionHandler('toggle', (params) => {
+            return new Promise((resolve, reject) => {
+                let status = params === 'true' || Number(params) === 1 ? 'ON' : 'OFF';
+                thing.properties['status'].set(status).then(() => {
+                    resolve(status);
+                });
+            });
         });
     thing.expose();
 });
