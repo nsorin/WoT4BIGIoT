@@ -28,7 +28,7 @@
     "port": 8081
   },
   "useMerge": true,
-  "useAggregate": true,
+  "useAggregate": false,
   "useHistory": false,
   "moreLogs": true
 }

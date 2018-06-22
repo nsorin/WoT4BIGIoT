@@ -112,6 +112,7 @@ class Api {
     private registerThingsWithGateway(things: Array<Thing>): void {
         this.gateway.init().then((gateway) => {
             if (this.config.useAggregate) {
+
                 // Identify identical things
                 let identicalThings: Array<Array<Thing>> = [];
                 for (let i = 0; i < things.length; i++) {
@@ -128,6 +129,21 @@ class Api {
                 }
                 // Register things by type
                 for (let i = 0; i < identicalThings.length; i++) {
+
+                    // Rename duplicates
+                    let alreadyUsedNames: Array<string> = [];
+                    let fakeIndex = 0;
+                    while (alreadyUsedNames.indexOf(identicalThings[i][0].name) > -1) {
+                        console.log('Current thing name:', identicalThings[i][0].name, 'is already in use.');
+                        let fakeIndexString = String(fakeIndex);
+                        if (fakeIndex === 0) {
+                            identicalThings[i][0].name = identicalThings[i][0].name + (++fakeIndex);
+                        } else {
+                            identicalThings[i][0].name = identicalThings[i][0].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
+                        }
+                    }
+                    alreadyUsedNames.push(identicalThings[i][0].name);
+
                     this.gateway.addAggregatedThings(identicalThings[i]);
                 }
             } else {
