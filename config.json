@@ -27,6 +27,9 @@
     "host":"127.0.0.1",
     "port": 8081
   },
+  "aggregation": {
+    "usePropertyFilters": true
+  },
   "useMerge": true,
   "useAggregate": true,
   "useHistory": false,

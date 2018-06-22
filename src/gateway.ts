@@ -91,10 +91,12 @@ export class Gateway {
                         this.routes.push(new GatewayRoute(things, [j], true));
                     }
                 }
-                this.routes.push(new GatewayRoute(things, propertyIndexes));
+                this.routes.push(new GatewayRoute(things, propertyIndexes, false, undefined,
+                    this.config.aggregation.usePropertyFilters));
             } else {
                 for (let j in thing.properties) {
-                    this.routes.push(new GatewayRoute(things, [j]));
+                    this.routes.push(new GatewayRoute(things, [j], false, undefined,
+                        this.config.aggregation.usePropertyFilters));
                     if (thing.properties[j].writable) {
                         this.routes.push(new GatewayRoute(things, [j], true));
                     }
@@ -114,10 +116,22 @@ export class Gateway {
                 console.log('New route found: /' + this.routes[i].uri, 'with method', this.routes[i].method);
                 if (this.routes[i].method === Method.GET) {
                     this.app.get('/' + this.routes[i].uri, (req, res) => {
-                        // TODO: Prepare req to separate id and params
+                        // Separate id, filters and params
                         let id = req.query ? req.query.id : null;
                         delete req.query.id;
-                        this.routes[i].access(req.query, id).then((result) => {
+
+                        let filters = {};
+                        if (this.config.useAggregate && this.config.aggregation.usePropertyFilters) {
+                            for (let j = 0; j < this.routes[i].propertyFiltersSchema.length; j++) {
+                                let filterName = this.routes[i].propertyFiltersSchema[j].name;
+                                if (req.query[filterName]) {
+                                    filters[filterName] = req.query[filterName];
+                                    delete req.query[filterName];
+                                }
+                            }
+                        }
+
+                        this.routes[i].access(req.query, id, filters).then((result) => {
                             res.send(result);
                         }).catch((err) => {
                             res.status(400).send({ error: err });
@@ -125,10 +139,22 @@ export class Gateway {
                     });
                 } else if (this.routes[i].method === Method.POST) {
                     this.app.post('/' + this.routes[i].uri, (req, res) => {
-                        // TODO: Prepare req to separate id and params
+                        // Separate id, filters and params
                         let id = req.body ? req.body.id : null;
                         delete req.body.id;
-                        this.routes[i].access(req.body, id).then((result) => {
+
+                        let filters = {};
+                        if (this.config.useAggregate && this.config.aggregation.usePropertyFilters) {
+                            for (let j = 0; j < this.routes[i].propertyFiltersSchema.length; j++) {
+                                let filterName = this.routes[i].propertyFiltersSchema[j].name;
+                                if (req.body[filterName]) {
+                                    filters[filterName] = req.body[filterName];
+                                    delete req.body[filterName];
+                                }
+                            }
+                        }
+
+                        this.routes[i].access(req.body, id, filters).then((result) => {
                             res.send(result);
                         }).catch((err) => {
                             res.status(400).send({ error: err });

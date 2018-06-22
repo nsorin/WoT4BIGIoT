@@ -250,16 +250,20 @@ export class GatewayRoute {
     /**
      * Input schema to register in the offering
      */
-    public convertedInputSchema: any;
+    public readonly convertedInputSchema: any = [];
     /**
      * Output schema to register in the offering
      */
-    public convertedOutputSchema: any;
+    public readonly convertedOutputSchema: any = [];
+    /**
+     * Additional input schema for filters
+     */
+    public readonly propertyFiltersSchema: any = [];
     /**
      * Is the route valid
      * @type {boolean}
      */
-    public valid = true;
+    public readonly valid: boolean = true;
     /**
      * Registered status
      * @type {boolean}
@@ -274,7 +278,7 @@ export class GatewayRoute {
      * Indicate if the route needs an id as input to work (for writing operation when aggregating)
      * @type {boolean}
      */
-    private needsId = false;
+    private readonly needsId: boolean = false;
 
 
     private static readonly DEFAULT_DATA_TYPE = "http://schema.org/DataType";
@@ -290,14 +294,19 @@ export class GatewayRoute {
 
     public static readonly LEVEL_SEPARATOR = "_";
 
+    public static readonly MIN_PREFIX = "min_";
+    public static readonly MAX_PREFIX = "max_";
+
     /**
      *
      * @param {Array<Thing>} things Things used by the route. They MUST be all identical!
      * @param {Array<number>} propertyIndexes
      * @param {boolean} write
      * @param {number} actionIndex
+     * @param {boolean} usePropertyFilters
      */
-    constructor(things: Array<Thing>, propertyIndexes: Array<string>, write?: boolean, actionIndex?: string) {
+    constructor(things: Array<Thing>, propertyIndexes: Array<string>, write?: boolean, actionIndex?: string,
+                usePropertyFilters?: boolean) {
         // Set up URI and method
         if (propertyIndexes.length === 0 && actionIndex) {
             // No property and an action
@@ -361,27 +370,41 @@ export class GatewayRoute {
             if (actionIndex) {
                 // Convert the input schema for the action. Use first thing as reference since they are identical.
                 this.convertedInputSchema = this.convertSchemaRecursive(things[0].actions[actionIndex].input,
-                    actionIndex, things[0]['@context'], true);
-                console.log('Converted input schema is', this.convertedInputSchema);
+                    actionIndex, things[0]['@context']);
+
                 // Convert the output schema for the action. Use first thing as reference since they are identical.
                 this.convertedOutputSchema = this.convertSchemaRecursive(things[0].actions[actionIndex].output,
-                    actionIndex, things[0]['@context'], true);
-                console.log('Converted output schema is', this.convertedOutputSchema);
+                    actionIndex, things[0]['@context']);
             } else {
                 if (write) {
                     // Can only write one property at once
                     this.convertedInputSchema = this.convertSchemaRecursive(things[0].properties[propertyIndexes[0]],
-                        propertyIndexes[0], things[0]['@context'], true);
+                        propertyIndexes[0], things[0]['@context']);
                     // No output in this case
-                    this.convertedOutputSchema = [];
                 } else {
-                    // Non base input in this case. ID when aggregating is added later.
-                    this.convertedInputSchema = [];
+                    // No base input in this case. ID when aggregating is added later.
                     this.convertedOutputSchema = things.length > 1 ? [GatewayRoute.ID_FIELD] : [];
                     for (let i = 0; i < propertyIndexes.length; i++) {
                         this.convertedOutputSchema = this.convertedOutputSchema.concat(
                             this.convertSchemaRecursive(things[0].properties[propertyIndexes[i]],
-                                propertyIndexes[i], things[0]['@context'], true));
+                                propertyIndexes[i], things[0]['@context']));
+                    }
+                    // Add property filter inputs if needed
+                    if (usePropertyFilters) {
+                        for (let i = 0; i < this.convertedOutputSchema.length; i++) {
+                            if (this.convertedOutputSchema[i].name !== GatewayRoute.ID_FIELD.name) {
+                                // Min filter
+                                this.propertyFiltersSchema.push({
+                                    name: GatewayRoute.MIN_PREFIX + this.convertedOutputSchema[i].name,
+                                    rdfUri: this.convertedOutputSchema[i].rdfUri
+                                });
+                                // Max filter
+                                this.propertyFiltersSchema.push({
+                                    name: GatewayRoute.MAX_PREFIX + this.convertedOutputSchema[i].name,
+                                    rdfUri: this.convertedOutputSchema[i].rdfUri
+                                });
+                            }
+                        }
                     }
                 }
             }
@@ -390,6 +413,9 @@ export class GatewayRoute {
                 this.convertedInputSchema.push(GatewayRoute.ID_FIELD);
             }
         }
+        console.log('Converted input schema is', this.convertedInputSchema);
+        console.log('Filter input schema is', this.propertyFiltersSchema);
+        console.log('Converted output schema is', this.convertedOutputSchema);
         // console.log('Created GatewayRoute:', this);
     }
 
@@ -397,9 +423,10 @@ export class GatewayRoute {
      * Access the route's interaction. If aggregating and an id is provided, use it.
      * @param params
      * @param {number} id
+     * * @param {any} propertyFilters
      * @return {Promise<any>}
      */
-    public access(params: any, id?: number): Promise<any> {
+    public access(params: any, id?: number, propertyFilters?: any): Promise<any> {
         console.log('Accessing GatewayRoute', this.uri);
         return new Promise((resolve, reject) => {
             if (!this.valid) {
@@ -458,8 +485,12 @@ export class GatewayRoute {
                             if (outputValues.length > 1) {
                                 finalObject.id = i;
                             }
-                            // The final output is an array with an item for each Thing
-                            finalArray.push(finalObject);
+
+                            console.log("FILTERS RECEIVED:", propertyFilters);
+                            // Evaluate filters
+                            if (!propertyFilters || this.outputMeetsRequirements(finalObject, propertyFilters)) {
+                                finalArray.push(finalObject);
+                            }
                         }
                         console.log('Final array is', finalArray);
                         resolve(finalArray);
@@ -467,6 +498,21 @@ export class GatewayRoute {
                 }
             }
         });
+    }
+
+    private outputMeetsRequirements(output, filters): boolean {
+        for (let i in filters) {
+            if (filters.hasOwnProperty(i)) {
+                if (i.startsWith(GatewayRoute.MIN_PREFIX)) {
+                    let targetField = i.replace(GatewayRoute.MIN_PREFIX, '');
+                    if (!output[targetField] || output[targetField] < filters[i]) return false;
+                } else if (i.startsWith(GatewayRoute.MAX_PREFIX)) {
+                    let targetField = i.replace(GatewayRoute.MAX_PREFIX, '');
+                    if (!output[targetField] || output[targetField] > filters[i]) return false;
+                }
+            }
+        }
+        return true;
     }
 
     private getRelevantForm(forms: Array<WoT.Form>, verb: InteractionVerb): WoT.Form {
@@ -487,7 +533,7 @@ export class GatewayRoute {
         return form;
     }
 
-    private convertSchemaRecursive(property: any, name: string, context: any, first: boolean) {
+    private convertSchemaRecursive(property: any, name: string, context: any) {
         if (!property) {
             return [];
         }
@@ -502,8 +548,8 @@ export class GatewayRoute {
             for (let i in property['properties']) {
                 if (property['properties'].hasOwnProperty(i)) {
                     newSchema = newSchema.concat(this.convertSchemaRecursive(
-                        property['properties'][i], (first ? '' : name + GatewayRoute.LEVEL_SEPARATOR) + i,
-                        context, false));
+                        property['properties'][i], name + GatewayRoute.LEVEL_SEPARATOR + i,
+                        context));
                 }
             }
         } else if (property.type === 'array') {

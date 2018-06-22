@@ -11,6 +11,10 @@ class GatewayConfig {
     public port: number
 }
 
+class AggregationConfig {
+    public usePropertyFilters: boolean;
+}
+
 export class Configuration {
 
     public moreLogs: boolean;
@@ -20,6 +24,7 @@ export class Configuration {
 
     public history = new HistoryConfig();
     public gateway = new GatewayConfig();
+    public aggregation = new AggregationConfig();
 
     constructor () {
         //TODO: Is there anything to do?
@@ -48,6 +53,9 @@ export class Configuration {
                     // Gateway config
                     this.gateway.port = body.gateway.port;
                     this.gateway.host = body.gateway.host;
+
+                    // Aggregation config
+                    this.aggregation.usePropertyFilters = body.aggregation.usePropertyFilters;
 
                     //TODO: Other config
 
