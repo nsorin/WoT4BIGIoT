@@ -104,6 +104,8 @@ export class Gateway {
                         delete req.query.id;
                         this.routes[i].access(req.query, id).then((result) => {
                             res.send(result);
+                        }).catch((err) => {
+                            res.status(400).send({ error: err });
                         });
                     });
                 } else if (this.routes[i].method === Method.POST) {
@@ -113,6 +115,8 @@ export class Gateway {
                         delete req.body.id;
                         this.routes[i].access(req.body, id).then((result) => {
                             res.send(result);
+                        }).catch((err) => {
+                            res.status(400).send({ error: err });
                         });
                     });
                 }

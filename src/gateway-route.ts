@@ -270,6 +270,11 @@ export class GatewayRoute {
      * @type {any[]}
      */
     private requests: Array<Array<RequestToThing>> = [];
+    /**
+     * Indicate if the route needs an id as input to work (for writing operation when aggregating)
+     * @type {boolean}
+     */
+    private needsId = false;
 
 
     private static readonly DEFAULT_DATA_TYPE = "http://schema.org/DataType";
@@ -298,11 +303,15 @@ export class GatewayRoute {
             // No property and an action
             this.uri = sanitize(things[0].name + '-' + actionIndex);
             this.method = Method.POST;
+            // If there is more than one thing, then we are aggregating and an id is needed.
+            this.needsId = things.length > 1;
         } else if (propertyIndexes.length === 1) {
             // Read or write?
             if (write) {
                 this.uri = sanitize(things[0].name + '-Write-' + propertyIndexes[0]);
                 this.method = Method.POST; // Should use PUT once the marketplace supports it
+                // If there is more than one thing, then we are aggregating and an id is needed.
+                this.needsId = things.length > 1;
             } else {
                 this.uri = sanitize(things[0].name + '-Read-' + propertyIndexes[0]);
                 this.method = Method.GET;
@@ -420,6 +429,9 @@ export class GatewayRoute {
                     } else {
                         reject('Invalid id provided');
                     }
+                } else if (this.needsId) {
+                    // Route needs id but no valid id provided
+                    reject('Id has to be provided');
                 } else {
                     // For each Thing, get all the desired interactions
                     let finalPromises: Array<Promise<any>> = [];
