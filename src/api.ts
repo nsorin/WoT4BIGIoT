@@ -14,7 +14,6 @@ class Api {
     private thingAnalyzer = new ThingAnalyzer(this.config);
     private gateway = new Gateway(this.config);
     private offeringManager = new OfferingManager(this.config);
-    private historyStore = new HistoryStore(this.config);
     private offeringConverter = new OfferingConverter(this.config);
 
     private initComplete = false;

@@ -423,7 +423,7 @@ export class GatewayRoute {
      * Access the route's interaction. If aggregating and an id is provided, use it.
      * @param params
      * @param {number} id
-     * * @param {any} propertyFilters
+     * @param {any} propertyFilters
      * @return {Promise<any>}
      */
     public access(params: any, id?: number, propertyFilters?: any): Promise<any> {

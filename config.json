@@ -1,7 +1,8 @@
 {
   "history": {
-    "historyPeriod": 5,
-    "historyLimit": 1000
+    "period": 5000,
+    "limit": 1000,
+    "onDisk": false
   },
   "market": {
     "addPrices": false,
@@ -31,7 +32,7 @@
     "usePropertyFilters": true
   },
   "useMerge": true,
-  "useAggregate": true,
-  "useHistory": false,
+  "useAggregate": false,
+  "useHistory": true,
   "moreLogs": true
 }

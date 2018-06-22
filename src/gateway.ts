@@ -2,12 +2,14 @@ import express = require('express');
 import {GatewayRoute, Method} from "./gateway-route";
 import {Configuration} from "./configuration";
 import Thing from "../thingweb.node-wot/packages/td-tools/src/thing-description";
+import {HistoryStore} from "./history-store";
 
 export class Gateway {
 
     private config: Configuration;
     private app = express();
     private routes: Array<GatewayRoute> = [];
+    private historyStores: Array<HistoryStore> = [];
     private initComplete = false;
 
     constructor(config: Configuration) {
@@ -62,10 +64,18 @@ export class Gateway {
                         this.routes.push(new GatewayRoute([things[i]], [j], true));
                     }
                 }
-                this.routes.push(new GatewayRoute([things[i]], propertyIndexes));
+                if (this.config.useHistory) {
+                    this.historyStores.push(new HistoryStore(this.config, new GatewayRoute([things[i]], propertyIndexes)));
+                } else {
+                    this.routes.push(new GatewayRoute([things[i]], propertyIndexes));
+                }
             } else {
                 for (let j in things[i].properties) {
-                    this.routes.push(new GatewayRoute([things[i]], [j]));
+                    if (this.config.useHistory) {
+                        this.historyStores.push(new HistoryStore(this.config, new GatewayRoute([things[i]], [j])));
+                    } else {
+                        this.routes.push(new GatewayRoute([things[i]], [j]));
+                    }
                     if (things[i].properties[j].writable) {
                         this.routes.push(new GatewayRoute([things[i]], [j], true));
                     }
@@ -75,6 +85,7 @@ export class Gateway {
                 this.routes.push(new GatewayRoute([things[i]], [], false, j));
             }
         }
+        if (this.config.useHistory) this.syncHistoryStores();
         this.syncRoutes();
     }
 
@@ -91,12 +102,20 @@ export class Gateway {
                         this.routes.push(new GatewayRoute(things, [j], true));
                     }
                 }
-                this.routes.push(new GatewayRoute(things, propertyIndexes, false, undefined,
-                    this.config.aggregation.usePropertyFilters));
+                if (this.config.useHistory) {
+                    this.historyStores.push(new HistoryStore(this.config, new GatewayRoute(things, propertyIndexes)));
+                } else {
+                    this.routes.push(new GatewayRoute(things, propertyIndexes, false, undefined,
+                        this.config.aggregation.usePropertyFilters));
+                }
             } else {
                 for (let j in thing.properties) {
-                    this.routes.push(new GatewayRoute(things, [j], false, undefined,
-                        this.config.aggregation.usePropertyFilters));
+                    if (this.config.useHistory) {
+                        this.historyStores.push(new HistoryStore(this.config, new GatewayRoute(things, [j])));
+                    } else {
+                        this.routes.push(new GatewayRoute(things, [j], false, undefined,
+                            this.config.aggregation.usePropertyFilters));
+                    }
                     if (thing.properties[j].writable) {
                         this.routes.push(new GatewayRoute(things, [j], true));
                     }
@@ -105,6 +124,7 @@ export class Gateway {
             for (let j in thing.actions) {
                 this.routes.push(new GatewayRoute(things, [], false, j));
             }
+            if (this.config.useHistory) this.syncHistoryStores();
             this.syncRoutes();
         }
     }
@@ -163,6 +183,40 @@ export class Gateway {
                 }
                 // TODO Register offering
                 this.routes[i].registered = true;
+            }
+        }
+    }
+
+    private syncHistoryStores() {
+        for (let i = 0; i < this.historyStores.length; i++) {
+            let sourceRoute = this.historyStores[i].source;
+            if (!sourceRoute.registered && sourceRoute.valid) {
+                console.log('New history store route found: /' + sourceRoute.uri, 'with method', sourceRoute.method);
+                if (sourceRoute.method === Method.GET) {
+                    this.app.get('/' + sourceRoute.uri, (req, res) => {
+                        let startTime = req.query ? req.query.startTime : null;
+                        let endTime = req.query ? req.query.endTime : null;
+                        delete req.query.startTime;
+                        delete req.query.endTime;
+
+                        this.historyStores[i].readStore(startTime, endTime).then((result) => {
+                           res.send(result);
+                        });
+                    });
+                } else if (sourceRoute.method === Method.POST) {
+                    this.app.post('/' + sourceRoute.uri, (req, res) => {
+                        let startTime = req.body ? req.body.startTime : null;
+                        let endTime = req.body ? req.body.endTime : null;
+                        delete req.body.startTime;
+                        delete req.body.endTime;
+
+                        this.historyStores[i].readStore(startTime, endTime).then((result) => {
+                            res.send(result);
+                        });
+                    });
+                }
+                // TODO Register offering
+                sourceRoute.registered = true;
             }
         }
     }

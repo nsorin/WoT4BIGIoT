@@ -4,6 +4,7 @@ import path = require('path');
 class HistoryConfig {
     public period: number;
     public limit: number;
+    public onDisk: boolean;
 }
 
 class GatewayConfig {
@@ -49,6 +50,7 @@ export class Configuration {
                     // History config
                     this.history.period = body.history.period;
                     this.history.limit = body.history.limit;
+                    this.history.onDisk = body.history.onDisk;
 
                     // Gateway config
                     this.gateway.port = body.gateway.port;
