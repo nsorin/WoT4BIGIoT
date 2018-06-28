@@ -41,6 +41,8 @@ export class OfferingConverter {
                 let offering = data.offering;
                 let thing = new Thing();
                 thing['@type'] = [MetadataManager.OFFERING_TYPE];
+                thing.name = offering.name ? offering.name : offering.id;
+                thing.id = this.config.market.marketplaceUrl + OfferingConverter.OFFERING_URI + offeringId;
                 thing['@id'] = this.config.market.marketplaceUrl + OfferingConverter.OFFERING_URI + offeringId;
                 this.generateInteraction(offering, thing);
                 // TODO: Handle metadata
@@ -57,6 +59,7 @@ export class OfferingConverter {
             }
             Promise.all(promises).then((values) => {
                 let thing = new Thing();
+                thing.name = "marketplace"; // Find a better nale / use constants
                 for (let i = 0; i < values.length; i++) {
                     this.generateInteraction(values[i].offering, thing);
                 }
@@ -77,10 +80,14 @@ export class OfferingConverter {
                 for (let i = 0; i < values.length; i++) {
                     if (!providerMap.hasOwnProperty(values[i].offering.provider.id)) {
                         // Init a new thing for this provider if it does not exist yet
-                        providerMap[values[i].offering.provider.id] = new Thing();
-                        providerMap[values[i].offering.provider.id]['@type'] = [MetadataManager.PROVIDER_TYPE];
-                        providerMap[values[i].offering.provider.id]['@id'] = this.config.market.marketplaceUrl
-                            + OfferingConverter.PROVIDER_URI + values[i].offering.provider.id;
+                        let providerId = values[i].offering.provider.id;
+                        providerMap[providerId] = new Thing();
+                        providerMap[providerId].name = providerId;
+                        providerMap[providerId]['@type'] = [MetadataManager.PROVIDER_TYPE];
+                        providerMap[providerId].id = this.config.market.marketplaceUrl
+                            + OfferingConverter.PROVIDER_URI + providerId;
+                        providerMap[providerId]['@id'] = this.config.market.marketplaceUrl
+                            + OfferingConverter.PROVIDER_URI + providerId;
                     }
                     this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id]);
                     // TODO: Handle additional metadata
