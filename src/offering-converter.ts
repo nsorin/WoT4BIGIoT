@@ -44,15 +44,7 @@ export class OfferingConverter {
                 thing['@id'] = this.config.market.marketplaceUrl + OfferingConverter.OFFERING_URI + offeringId;
                 this.generateInteraction(offering, thing);
                 // TODO: Handle metadata
-                if (this.config.saveThingToFile) {
-                    this.saveThings([thing]).then(() => {
-                        resolve();
-                    }).catch((err) => {
-                        console.log('One thing could not be saved...');
-                        console.log(err);
-                        reject();
-                    });
-                }
+                resolve(thing);
             });
         });
     }
@@ -69,15 +61,7 @@ export class OfferingConverter {
                     this.generateInteraction(values[i].offering, thing);
                 }
                 // TODO: Handle metadata
-                if (this.config.saveThingToFile) {
-                    this.saveThings([thing]).then(() => {
-                        resolve();
-                    }).catch((err) => {
-                        console.log('One thing could not be saved...');
-                        console.log(err);
-                        reject();
-                    });
-                }
+                resolve(thing);
             });
         });
     }
@@ -101,15 +85,7 @@ export class OfferingConverter {
                     this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id]);
                     // TODO: Handle additional metadata
                 }
-                if (this.config.saveThingToFile) {
-                    this.saveThings(providerMap.values()).then(() => {
-                        resolve();
-                    }).catch((err) => {
-                        console.log('One thing could not be saved...');
-                        console.log(err);
-                        reject();
-                    });
-                }
+                resolve(providerMap.values());
             });
         });
     }
@@ -261,24 +237,5 @@ export class OfferingConverter {
             forms.push(form);
         }
         return forms;
-    }
-
-    private saveThings(things: Array<Thing>): Promise<any> {
-        let promises: Array<Promise<any>> = [];
-        for (let i = 0; i < things.length; i++) {
-            promises.push(new Promise((resolve, reject) => {
-                let fileName = __dirname + this.config.saveThingPath + things[i].name + ".json";
-                fs.writeFile(fileName, serializeTD(things[i]), (err) => {
-                    if (err) {
-                        console.log('Failed to write', fileName);
-                        reject();
-                    } else {
-                        console.log('Thing saved to', fileName);
-                        resolve();
-                    }
-                });
-            }));
-        }
-        return Promise.all(promises);
     }
 }

@@ -3,3 +3,4 @@ bigiot-js/
 .idea/
 node_modules/
 dist/
+output/

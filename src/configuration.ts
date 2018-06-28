@@ -37,8 +37,6 @@ export class Configuration {
     public useAggregate: boolean;
     public useHistory: boolean;
     public keepOfferings: boolean;
-    public saveThingToFile: boolean;
-    public saveThingPath: boolean;
     public offeringConversionStrategy: OfferingToThing;
 
     public history = new HistoryConfig();
@@ -66,8 +64,6 @@ export class Configuration {
                     this.useAggregate = body.useAggregate;
                     this.useHistory = body.useHistory;
                     this.keepOfferings = body.keepOfferings;
-                    this.saveThingToFile = body.saveThingToFile;
-                    this.saveThingPath = body.saveThingPath;
                     this.offeringConversionStrategy = body.offeringConversionStrategy;
 
                     // History config

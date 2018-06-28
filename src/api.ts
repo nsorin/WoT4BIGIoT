@@ -140,7 +140,7 @@ export class Api {
      * @param {Array<string>} offeringIds Unique identifiers for offerings on the marketplace.
      * @return {Promise<any>}
      */
-    public convertOfferings(offeringIds: Array<string>): Promise<any> {
+    public convertOfferings(offeringIds: Array<string>): Promise<Array<Thing>> {
         return new Promise((resolve, reject) => {
             if (!this.initComplete) {
                 reject('Configuration not initialized!');
@@ -151,23 +151,26 @@ export class Api {
                         for (let i = 0; i < offeringIds.length; i++) {
                             promises.push(this.offeringConverter.convertOne(offeringIds[i]));
                         }
-                        Promise.all(promises).then(() => {
+                        Promise.all(promises).then((data) => {
                             console.log('Offerings converted!');
+                            resolve(data);
                         }).catch((err) => {
                             console.log('There was a problem converting an offering:');
                             console.log(err);
                         });
                         break;
                     case OfferingToThing.MARKETPLACE_TO_THING:
-                        this.offeringConverter.convertMultiple(offeringIds).then(() => {
+                        this.offeringConverter.convertMultiple(offeringIds).then((data) => {
                             console.log('Offerings converted!');
+                            resolve([data]);
                         }).catch((err) => {
                             console.log('There was a problem converting an offering:');
                             console.log(err);
                         });
                         break;
                     case OfferingToThing.PROVIDER_TO_THING:
-                        this.offeringConverter.convertMultipleByProvider(offeringIds).then(() => {
+                        this.offeringConverter.convertMultipleByProvider(offeringIds).then((data) => {
+                            resolve(data);
                             console.log('Offerings converted!');
                         }).catch((err) => {
                             console.log('There was a problem converting an offering:');

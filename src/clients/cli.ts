@@ -2,8 +2,10 @@ import readline = require('readline');
 import fs = require('fs');
 import http = require('http');
 import coap = require('coap');
+import path = require('path');
 import {Api} from '../api';
 import {MetadataManager} from '../metadata-manager';
+import {Thing, serializeTD} from "../../thingweb.node-wot/packages/td-tools";
 
 const CONVERT_THINGS = 'convert_things';
 const SHOW_OFFERINGS_TO_REGISTER = 'show_offerings_to_register';
@@ -11,8 +13,9 @@ const SHOW_REGISTERED_OFFERINGS = 'show_registered_offerings';
 const REGISTER_ALL_OFFERINGS = 'register_all_offerings';
 const DELETE_ALL_OFFERINGS = 'delete_all_offerings';
 const REGISTER_OFFERINGS = 'register_offerings';
-
 const CONVERT_OFFERINGS = 'convert_offerings';
+
+const THING_SAVE_PATH = '../../output/';
 
 class Command {
     private readonly name: string;
@@ -135,7 +138,10 @@ function convertThings(api: Api, uri: Array<string>): Promise<any> {
 }
 
 function convertOfferings(api: Api, offeringIds: Array<string>): Promise<any> {
-    return api.convertOfferings(offeringIds);
+    return api.convertOfferings(offeringIds).then((things) => {
+        saveThings(things);
+        console.log('Things saved!');
+    });
 }
 
 function registerOfferings(api: Api, uris: Array<string>) {
@@ -373,3 +379,10 @@ function askAmount(rl: any, offering: any, callback: any) {
         }
     });
 }
+
+function saveThings(things: Array<Thing>) {
+    for (let i = 0; i < things.length; i++) {
+        fs.writeFileSync(path.resolve(__dirname, THING_SAVE_PATH + things[i].name + '.json'), serializeTD(things[i]));
+    }
+}
+

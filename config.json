@@ -22,8 +22,6 @@
   "useAggregate": true,
   "useHistory": false,
   "keepOfferings": false,
-  "saveThingToFile": true,
-  "saveThingPath": "../output/",
   "offeringConversionStrategy": "OFFERING_TO_THING",
   "moreLogs": true
 }
