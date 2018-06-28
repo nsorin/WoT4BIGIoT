@@ -5,7 +5,7 @@
     "onDisk": false
   },
   "market": {
-    "marketplaceUrl": "http://market-dev.bigiot.org",
+    "marketplaceUrl": "https://market-dev.big-iot.org/",
     "providerId": "NSTest-NSProvider",
     "providerSecret": "C2ZEvzPbRg-iJAYhVAyLAQ==",
     "consumerId": "NSTest-NSConsumer",

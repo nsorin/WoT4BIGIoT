@@ -10,10 +10,10 @@ export class Api {
     private static CONFIG_SOURCE = "../config.json";
 
     private config = new Configuration();
-    private thingAnalyzer = new ThingAnalyzer(this.config);
-    private offeringManager = new OfferingManager(this.config);
-    private gateway = new Gateway(this.config, this.offeringManager);
-    private offeringConverter = new OfferingConverter(this.config);
+    private thingAnalyzer: ThingAnalyzer;
+    private offeringManager: OfferingManager;
+    private gateway: Gateway;
+    private offeringConverter: OfferingConverter;
 
     private initComplete = false;
 
@@ -33,7 +33,11 @@ export class Api {
     public init(): Promise<any> {
         return new Promise((resolve, reject) => {
             this.config.init(Api.CONFIG_SOURCE).then(() => {
+                this.thingAnalyzer = new ThingAnalyzer(this.config);
+                this.offeringConverter = new OfferingConverter(this.config);
+                this.offeringManager = new OfferingManager(this.config);
                 this.offeringManager.init().then(() => {
+                    this.gateway = new Gateway(this.config, this.offeringManager);
                     this.initComplete = true;
                     resolve(this);
                 }).catch((err) => {

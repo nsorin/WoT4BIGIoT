@@ -22,11 +22,6 @@ class MarketConfig {
     public providerSecret: string;
     public consumerId: string;
     public consumerSecret: string;
-
-    public defaultCategory: string;
-    public defaultLicense: string;
-    public defaultSpatialExtent: any;
-    public defaultPrice: any;
 }
 
 export class Configuration {

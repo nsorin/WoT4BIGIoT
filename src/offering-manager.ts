@@ -12,7 +12,7 @@ export class OfferingManager {
     private toRegister: Array<any> = [];
     private registered: Array<any> = [];
     private readonly baseUri: string;
-    private provider: any = null;
+    private readonly provider: any = null;
     private initDone: boolean = false;
 
     private static readonly ACCESS_TYPE = 'EXTERNAL';
