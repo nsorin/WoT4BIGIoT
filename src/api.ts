@@ -17,10 +17,14 @@ export class Api {
 
     private initComplete = false;
 
-    constructor() {
-        //TODO
+    private constructor() {
+        // Nothing to do, call init
     }
 
+    /**
+     * Static method to call to init the API
+     * @return {Promise<any>}
+     */
     public static getApi(): Promise<any> {
         let api = new Api();
         return api.init();
@@ -40,6 +44,22 @@ export class Api {
                     this.gateway = new Gateway(this.config, this.offeringManager);
                     this.initComplete = true;
                     resolve(this);
+
+                    // Exit handler
+                    if (!this.config.keepOfferings) {
+                        console.log('Setting up exit handler');
+                        let exitHandler = () => {
+                            this.offeringManager.unregisterOfferings(() => {
+                                process.exit(1);
+                            });
+                        };
+                        process.on('exit', exitHandler);
+                        process.on('SIGINT', exitHandler);
+                        process.on('SIGUSR1', exitHandler);
+                        process.on('SIGUSR2', exitHandler);
+                        process.on('uncaughtException', exitHandler);
+                    }
+
                 }).catch((err) => {
                     console.log('OfferingManager failed to init, error:', err);
                 });
@@ -103,6 +123,12 @@ export class Api {
 
     public registerAllOfferings() {
         return this.offeringManager.registerOfferings();
+    }
+
+    public deleteAllOfferings() {
+        return this.offeringManager.unregisterOfferings(() => {
+            console.log('Deleted all offerings!');
+        });
     }
 
     public disableOffering(name: string) {

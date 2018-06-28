@@ -31,6 +31,7 @@ export class Configuration {
     public useAggregate: boolean;
     public useHistory: boolean;
     public useUserInput: boolean;
+    public keepOfferings: boolean;
 
     public history = new HistoryConfig();
     public gateway = new GatewayConfig();
@@ -56,7 +57,7 @@ export class Configuration {
                     this.useMerge = body.useMerge;
                     this.useAggregate = body.useAggregate;
                     this.useHistory = body.useHistory;
-                    this.useUserInput = body.useUserInput;
+                    this.keepOfferings = body.keepOfferings;
 
                     // History config
                     this.history.period = body.history.period;

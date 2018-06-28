@@ -21,6 +21,6 @@
   "useMerge": true,
   "useAggregate": true,
   "useHistory": false,
-  "useUserInput": true,
+  "keepOfferings": false,
   "moreLogs": true
 }

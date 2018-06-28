@@ -9,6 +9,7 @@ const CONVERT_THINGS = 'convert_things';
 const SHOW_OFFERINGS_TO_REGISTER = 'show_offerings_to_register';
 const SHOW_REGISTERED_OFFERINGS = 'show_registered_offerings';
 const REGISTER_ALL_OFFERINGS = 'register_all_offerings';
+const DELETE_ALL_OFFERINGS = 'delete_all_offerings';
 const REGISTER_OFFERINGS = 'register_offerings';
 
 const CONVERT_OFFERINGS = 'convert_offerings';
@@ -43,6 +44,7 @@ const COMMANDS = {
     [SHOW_OFFERINGS_TO_REGISTER]: new Command(SHOW_OFFERINGS_TO_REGISTER, '', showOfferingsToRegister),
     [SHOW_REGISTERED_OFFERINGS]: new Command(SHOW_REGISTERED_OFFERINGS, '', showRegisteredOfferings),
     [REGISTER_ALL_OFFERINGS]: new Command(REGISTER_ALL_OFFERINGS, '', registerAllOfferings),
+    [DELETE_ALL_OFFERINGS]: new Command(DELETE_ALL_OFFERINGS, '', deleteAllOfferings),
     [REGISTER_OFFERINGS]: new Command(REGISTER_OFFERINGS, '<uri>...', registerOfferings),
     [CONVERT_OFFERINGS]: new Command(CONVERT_OFFERINGS, '<offering_id>...', convertOfferings)
 };
@@ -152,6 +154,10 @@ function registerAllOfferings(api: Api) {
             });
         });
     });
+}
+
+function deleteAllOfferings(api: Api) {
+    api.deleteAllOfferings();
 }
 
 function showOfferingsToRegister(api: Api): Promise<any> {
