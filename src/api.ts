@@ -3,7 +3,7 @@ import {ThingAnalyzer} from "./thing-analyzer";
 import {Gateway} from "./gateway";
 import {OfferingManager} from "./offering-manager";
 import {OfferingConverter} from "./offering-converter";
-import {Configuration} from "./configuration";
+import {Configuration, OfferingToThing} from "./configuration";
 
 export class Api {
 
@@ -40,28 +40,32 @@ export class Api {
                 this.thingAnalyzer = new ThingAnalyzer(this.config);
                 this.offeringConverter = new OfferingConverter(this.config);
                 this.offeringManager = new OfferingManager(this.config);
-                this.offeringManager.init().then(() => {
-                    this.gateway = new Gateway(this.config, this.offeringManager);
-                    this.initComplete = true;
-                    resolve(this);
+                this.offeringConverter.init().then(() => {
+                    this.offeringManager.init().then(() => {
+                        this.gateway = new Gateway(this.config, this.offeringManager);
+                        this.initComplete = true;
+                        resolve(this);
 
-                    // Exit handler
-                    if (!this.config.keepOfferings) {
-                        console.log('Setting up exit handler');
-                        let exitHandler = () => {
-                            this.offeringManager.unregisterOfferings(() => {
-                                process.exit(1);
-                            });
-                        };
-                        process.on('exit', exitHandler);
-                        process.on('SIGINT', exitHandler);
-                        process.on('SIGUSR1', exitHandler);
-                        process.on('SIGUSR2', exitHandler);
-                        process.on('uncaughtException', exitHandler);
-                    }
+                        // Exit handler
+                        if (!this.config.keepOfferings) {
+                            console.log('Setting up exit handler');
+                            let exitHandler = () => {
+                                this.offeringManager.unregisterOfferings(() => {
+                                    process.exit(1);
+                                });
+                            };
+                            process.on('exit', exitHandler);
+                            process.on('SIGINT', exitHandler);
+                            process.on('SIGUSR1', exitHandler);
+                            process.on('SIGUSR2', exitHandler);
+                            process.on('uncaughtException', exitHandler);
+                        }
 
+                    }).catch((err) => {
+                        console.log('OfferingManager failed to init, error:', err);
+                    });
                 }).catch((err) => {
-                    console.log('OfferingManager failed to init, error:', err);
+                    console.log('OfferingConverter failed to init, error:', err);
                 });
             }).catch((e) => {
                 reject('Config error:' + e);
@@ -131,10 +135,6 @@ export class Api {
         });
     }
 
-    public disableOffering(name: string) {
-        // TODO
-    }
-
     /**
      * Convert offerings to the TD format
      * @param {Array<string>} offeringIds Unique identifiers for offerings on the marketplace.
@@ -145,7 +145,36 @@ export class Api {
             if (!this.initComplete) {
                 reject('Configuration not initialized!');
             } else {
-                // TODO
+                switch(this.config.offeringConversionStrategy) {
+                    case OfferingToThing.OFFERING_TO_THING:
+                        let promises: Array<Promise<any>> = [];
+                        for (let i = 0; i < offeringIds.length; i++) {
+                            promises.push(this.offeringConverter.convertOne(offeringIds[i]));
+                        }
+                        Promise.all(promises).then(() => {
+                            console.log('Offerings converted!');
+                        }).catch((err) => {
+                            console.log('There was a problem converting an offering:');
+                            console.log(err);
+                        });
+                        break;
+                    case OfferingToThing.MARKETPLACE_TO_THING:
+                        this.offeringConverter.convertMultiple(offeringIds).then(() => {
+                            console.log('Offerings converted!');
+                        }).catch((err) => {
+                            console.log('There was a problem converting an offering:');
+                            console.log(err);
+                        });
+                        break;
+                    case OfferingToThing.PROVIDER_TO_THING:
+                        this.offeringConverter.convertMultipleByProvider(offeringIds).then(() => {
+                            console.log('Offerings converted!');
+                        }).catch((err) => {
+                            console.log('There was a problem converting an offering:');
+                            console.log(err);
+                        });
+                        break;
+                }
             }
         });
     }

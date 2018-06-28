@@ -1,7 +1,7 @@
 import {Configuration} from "./configuration";
 import bigiot = require('../bigiot-js');
 import {GatewayRoute} from "./gateway-route";
-import Thing from "../thingweb.node-wot/packages/td-tools/src/thing-description";
+import {Thing} from "../thingweb.node-wot/packages/td-tools";
 import {MetadataManager} from "./metadata-manager";
 import sanitize = require('sanitize-filename');
 

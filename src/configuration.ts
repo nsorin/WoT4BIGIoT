@@ -1,6 +1,12 @@
 import fs = require('fs');
 import path = require('path');
 
+export enum OfferingToThing {
+    OFFERING_TO_THING = 'OFFERING_TO_THING',
+    PROVIDER_TO_THING = 'PROVIDER_TO_THING',
+    MARKETPLACE_TO_THING = 'MARKETPLACE_TO_THING'
+}
+
 class HistoryConfig {
     public period: number;
     public limit: number;
@@ -30,8 +36,10 @@ export class Configuration {
     public useMerge: boolean;
     public useAggregate: boolean;
     public useHistory: boolean;
-    public useUserInput: boolean;
     public keepOfferings: boolean;
+    public saveThingToFile: boolean;
+    public saveThingPath: boolean;
+    public offeringConversionStrategy: OfferingToThing;
 
     public history = new HistoryConfig();
     public gateway = new GatewayConfig();
@@ -58,6 +66,9 @@ export class Configuration {
                     this.useAggregate = body.useAggregate;
                     this.useHistory = body.useHistory;
                     this.keepOfferings = body.keepOfferings;
+                    this.saveThingToFile = body.saveThingToFile;
+                    this.saveThingPath = body.saveThingPath;
+                    this.offeringConversionStrategy = body.offeringConversionStrategy;
 
                     // History config
                     this.history.period = body.history.period;

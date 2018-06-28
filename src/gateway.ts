@@ -1,7 +1,7 @@
 import express = require('express');
 import {GatewayRoute, Method} from "./gateway-route";
 import {Configuration} from "./configuration";
-import Thing from "../thingweb.node-wot/packages/td-tools/src/thing-description";
+import {Thing} from "../thingweb.node-wot/packages/td-tools";
 import {HistoryStore} from "./history-store";
 import {OfferingManager} from "./offering-manager";
 

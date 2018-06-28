@@ -1,4 +1,4 @@
-import Thing from "../thingweb.node-wot/packages/td-tools/src/thing-description";
+import {Thing} from "../thingweb.node-wot/packages/td-tools";
 
 export class MetadataManager {
 
@@ -11,7 +11,11 @@ export class MetadataManager {
         integer: "http://schema.org/Integer",
         float: "http://schema.org/Float"
     };
-    public static readonly DEFAULT_ARRAY_TYPE: "http://schema.org/ItemList";
+    public static readonly DEFAULT_ARRAY_TYPE = "http://schema.org/ItemList";
+
+    public static readonly OFFERING_TYPE = "http://schema.big-iot.org/core/Offering";
+    public static readonly PROVIDER_TYPE = "http://schema.big-iot.org/core/Provider";
+
 
     // BIGIOT Default Metadata
     public static readonly CATEGORY = 'http://schema.org/category';

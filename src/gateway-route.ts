@@ -1,4 +1,4 @@
-import Thing from "../thingweb.node-wot/packages/td-tools/src/thing-description";
+import {Thing} from "../thingweb.node-wot/packages/td-tools";
 import sanitize = require('sanitize-filename');
 import request = require('request');
 import coap = require('coap');
