@@ -4,22 +4,26 @@ import {Gateway} from "./gateway";
 import {OfferingManager} from "./offering-manager";
 import {OfferingConverter} from "./offering-converter";
 import {Configuration} from "./configuration";
-import {HistoryStore} from "./history-store";
 
-class Api {
+export class Api {
 
     private static CONFIG_SOURCE = "../config.json";
 
     private config = new Configuration();
     private thingAnalyzer = new ThingAnalyzer(this.config);
-    private gateway = new Gateway(this.config);
     private offeringManager = new OfferingManager(this.config);
+    private gateway = new Gateway(this.config, this.offeringManager);
     private offeringConverter = new OfferingConverter(this.config);
 
     private initComplete = false;
 
     constructor() {
         //TODO
+    }
+
+    public static getApi(): Promise<any> {
+        let api = new Api();
+        return api.init();
     }
 
     /**
@@ -29,8 +33,12 @@ class Api {
     public init(): Promise<any> {
         return new Promise((resolve, reject) => {
             this.config.init(Api.CONFIG_SOURCE).then(() => {
-                this.initComplete = true;
-                resolve(this);
+                this.offeringManager.init().then(() => {
+                    this.initComplete = true;
+                    resolve(this);
+                }).catch((err) => {
+                    console.log('OfferingManager failed to init, error:', err);
+                });
             }).catch((e) => {
                 reject('Config error:' + e);
             });
@@ -43,7 +51,7 @@ class Api {
      * @param {Array<string>} tds JSON TDs (not parsed)
      * @return {Promise<any>}
      */
-    public registerThings(tds: Array<any>) {
+    public convertThings(tds: Array<string>) {
         if (!this.initComplete) {
             throw 'ERROR: Config not initialized!';
         } else {
@@ -76,9 +84,25 @@ class Api {
             }
             console.log(directRegistration.length, "things to register directly");
             console.log(gatewayRegistration.length, "things to register with gateway");
-            this.registerThingsDirectly(directRegistration);
-            this.registerThingsWithGateway(gatewayRegistration);
+            this.convertThingsDirectly(directRegistration);
+            this.convertThingsWithGateway(gatewayRegistration);
         }
+    }
+
+    public getOfferingsToRegister() {
+        return this.offeringManager.getOfferingsToRegister();
+    }
+
+    public getRegisteredOfferings() {
+        return this.offeringManager.getRegisteredOfferings();
+    }
+
+    public registerAllOfferings() {
+        return this.offeringManager.registerOfferings();
+    }
+
+    public disableOffering(name: string) {
+        // TODO
     }
 
     /**
@@ -100,15 +124,30 @@ class Api {
      * Directly register things on the marketplace (after checking they are compatible)
      * @param {Array<Thing>} things
      */
-    private registerThingsDirectly(things: Array<Thing>): void {
-        // TODO
+    private convertThingsDirectly(things: Array<Thing>): void {
+        let alreadyUsedNames: Array<string> = [];
+        for (let i = 0; i < things.length; i++) {
+            // Rename duplicates
+            let fakeIndex = 0;
+            while (alreadyUsedNames.indexOf(things[i].name) > -1) {
+                console.log('Current thing name:', things[i].name, 'is already in use.');
+                let fakeIndexString = String(fakeIndex);
+                if (fakeIndex === 0) {
+                    things[i].name = things[i].name + (++fakeIndex);
+                } else {
+                    things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
+                }
+            }
+            alreadyUsedNames.push(things[i].name);
+            this.offeringManager.addOfferingsForThing(things[i]);
+        }
     }
 
     /**
      * Initialize or update the gateway to register incompatible things or to use advanced features.
      * @param {Array<Thing>} things
      */
-    private registerThingsWithGateway(things: Array<Thing>): void {
+    private convertThingsWithGateway(things: Array<Thing>): void {
         this.gateway.init().then((gateway) => {
             if (this.config.useAggregate) {
 
@@ -150,5 +189,3 @@ class Api {
         });
     }
 }
-
-module.exports = Api;

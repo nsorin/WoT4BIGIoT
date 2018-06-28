@@ -5,24 +5,11 @@
     "onDisk": false
   },
   "market": {
-    "addPrices": false,
-    "defaultLicense": "CREATIVE_COMMONS",
-    "defaultPrice": {
-      "pricingModel": "FREE"
-    },
-    "defaultSpatialExtent": {
-      "city": "",
-      "boundary": {
-        "l1": {
-          "lat": 90,
-          "lng": 180
-        },
-        "l2": {
-          "lat": -90,
-          "lng": -180
-        }
-      }
-    }
+    "marketplaceUrl": "http://market-dev.bigiot.org",
+    "providerId": "NSTest-NSProvider",
+    "providerSecret": "C2ZEvzPbRg-iJAYhVAyLAQ==",
+    "consumerId": "NSTest-NSConsumer",
+    "consumerSecret": "GPuwiBTGQHioPicch2flcQ=="
   },
   "gateway": {
     "host":"127.0.0.1",
@@ -32,7 +19,8 @@
     "usePropertyFilters": true
   },
   "useMerge": true,
-  "useAggregate": false,
-  "useHistory": true,
+  "useAggregate": true,
+  "useHistory": false,
+  "useUserInput": true,
   "moreLogs": true
 }

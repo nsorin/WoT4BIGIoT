@@ -3,6 +3,7 @@ import sanitize = require('sanitize-filename');
 import request = require('request');
 import coap = require('coap');
 import urlParser = require('url');
+import {MetadataManager} from "./metadata-manager";
 
 enum Protocol {
     HTTP = 'HTTP',
@@ -280,16 +281,6 @@ export class GatewayRoute {
      */
     private readonly needsId: boolean = false;
 
-
-    private static readonly DEFAULT_DATA_TYPE = "http://schema.org/DataType";
-    private static readonly DATA_TYPE_CONVERSION = {
-        string: "http://schema.org/Text",
-        boolean: "http://schema.org/Boolean",
-        number: "http://schema.org/Number",
-        integer: "http://schema.org/Integer",
-        float: "http://schema.org/Float"
-    };
-    private static readonly DEFAULT_ARRAY_TYPE: "http://schema.org/ItemList";
     private static readonly ID_FIELD = {name: "id", rdfUri: "http://schema.org/identifier"};
 
     public static readonly LEVEL_SEPARATOR = "_";
@@ -555,10 +546,10 @@ export class GatewayRoute {
         } else if (property.type === 'array') {
             newSchema = [{
                 name: name,
-                rdfUri: GatewayRoute.DEFAULT_ARRAY_TYPE
+                rdfUri: MetadataManager.DEFAULT_ARRAY_TYPE
             }];
         } else {
-            let semanticType = GatewayRoute.DATA_TYPE_CONVERSION[property.type];
+            let semanticType = MetadataManager.DATA_TYPE_CONVERSION[property.type];
             if (semanticType) {
                 newSchema = [{
                     name: name,
@@ -567,7 +558,7 @@ export class GatewayRoute {
             } else {
                 newSchema = [{
                     name: name,
-                    rdfUri: GatewayRoute.DEFAULT_DATA_TYPE
+                    rdfUri: MetadataManager.DEFAULT_DATA_TYPE
                 }];
                 console.log('Warning: input field ', name, ' has no known type. Default type used.');
             }

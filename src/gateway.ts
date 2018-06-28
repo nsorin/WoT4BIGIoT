@@ -3,17 +3,20 @@ import {GatewayRoute, Method} from "./gateway-route";
 import {Configuration} from "./configuration";
 import Thing from "../thingweb.node-wot/packages/td-tools/src/thing-description";
 import {HistoryStore} from "./history-store";
+import {OfferingManager} from "./offering-manager";
 
 export class Gateway {
 
-    private config: Configuration;
+    private readonly config: Configuration;
+    private readonly offeringManager: OfferingManager;
     private app = express();
     private routes: Array<GatewayRoute> = [];
     private historyStores: Array<HistoryStore> = [];
     private initComplete = false;
 
-    constructor(config: Configuration) {
+    constructor(config: Configuration, offeringManager: OfferingManager) {
         this.config = config;
+        this.offeringManager = offeringManager;
     }
 
     /**
@@ -61,28 +64,38 @@ export class Gateway {
                 for (let j in things[i].properties) {
                     propertyIndexes.push(j);
                     if (things[i].properties[j].writable) {
-                        this.routes.push(new GatewayRoute([things[i]], [j], true));
+                        let newRoute = new GatewayRoute([things[i]], [j], true);
+                        this.routes.push(newRoute);
+                        this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [j], true);
                     }
                 }
+                let newRoute = new GatewayRoute([things[i]], propertyIndexes);
                 if (this.config.useHistory) {
-                    this.historyStores.push(new HistoryStore(this.config, new GatewayRoute([things[i]], propertyIndexes)));
+                    this.historyStores.push(new HistoryStore(this.config, newRoute));
                 } else {
-                    this.routes.push(new GatewayRoute([things[i]], propertyIndexes));
+                    this.routes.push(newRoute);
                 }
+                this.offeringManager.addOfferingForRoute(newRoute, [things[i]], propertyIndexes);
             } else {
                 for (let j in things[i].properties) {
+                    let newRoute = new GatewayRoute([things[i]], [j]);
                     if (this.config.useHistory) {
-                        this.historyStores.push(new HistoryStore(this.config, new GatewayRoute([things[i]], [j])));
+                        this.historyStores.push(new HistoryStore(this.config, newRoute));
                     } else {
-                        this.routes.push(new GatewayRoute([things[i]], [j]));
+                        this.routes.push(newRoute);
                     }
+                    this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [j]);
                     if (things[i].properties[j].writable) {
-                        this.routes.push(new GatewayRoute([things[i]], [j], true));
+                        let newWriteRoute = new GatewayRoute([things[i]], [j], true);
+                        this.routes.push(newWriteRoute);
+                        this.offeringManager.addOfferingForRoute(newWriteRoute, [things[i]], [j], true);
                     }
                 }
             }
             for (let j in things[i].actions) {
-                this.routes.push(new GatewayRoute([things[i]], [], false, j));
+                let newRoute = new GatewayRoute([things[i]], [], false, j);
+                this.routes.push(newRoute);
+                this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [], false, j);
             }
         }
         if (this.config.useHistory) this.syncHistoryStores();
@@ -99,30 +112,44 @@ export class Gateway {
                 for (let j in thing.properties) {
                     propertyIndexes.push(j);
                     if (thing.properties[j].writable) {
-                        this.routes.push(new GatewayRoute(things, [j], true));
+                        let newRoute = new GatewayRoute(things, [j], true);
+                        this.routes.push(newRoute);
+                        this.offeringManager.addOfferingForRoute(newRoute, things, [j], true);
                     }
                 }
                 if (this.config.useHistory) {
-                    this.historyStores.push(new HistoryStore(this.config, new GatewayRoute(things, propertyIndexes)));
+                    let newRoute = new GatewayRoute(things, propertyIndexes);
+                    this.historyStores.push(new HistoryStore(this.config, newRoute));
+                    this.offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
                 } else {
-                    this.routes.push(new GatewayRoute(things, propertyIndexes, false, undefined,
-                        this.config.aggregation.usePropertyFilters));
+                    let newRoute = new GatewayRoute(things, propertyIndexes, false, undefined,
+                        this.config.aggregation.usePropertyFilters);
+                    this.routes.push(newRoute);
+                    this.offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
                 }
             } else {
                 for (let j in thing.properties) {
                     if (this.config.useHistory) {
-                        this.historyStores.push(new HistoryStore(this.config, new GatewayRoute(things, [j])));
+                        let newRoute = new GatewayRoute(things, [j]);
+                        this.historyStores.push(new HistoryStore(this.config, newRoute));
+                        this.offeringManager.addOfferingForRoute(newRoute, things, [j]);
                     } else {
-                        this.routes.push(new GatewayRoute(things, [j], false, undefined,
-                            this.config.aggregation.usePropertyFilters));
+                        let newRoute = new GatewayRoute(things, [j], false, undefined,
+                            this.config.aggregation.usePropertyFilters);
+                        this.routes.push(newRoute);
+                        this.offeringManager.addOfferingForRoute(newRoute, things, [j]);
                     }
                     if (thing.properties[j].writable) {
-                        this.routes.push(new GatewayRoute(things, [j], true));
+                        let newWriteRoute = new GatewayRoute(things, [j], true);
+                        this.routes.push(newWriteRoute);
+                        this.offeringManager.addOfferingForRoute(newWriteRoute, things, [j], true);
                     }
                 }
             }
             for (let j in thing.actions) {
-                this.routes.push(new GatewayRoute(things, [], false, j));
+                let newRoute = new GatewayRoute(things, [], false, j);
+                this.routes.push(newRoute);
+                this.offeringManager.addOfferingForRoute(newRoute, things, [], false, j);
             }
             if (this.config.useHistory) this.syncHistoryStores();
             this.syncRoutes();
