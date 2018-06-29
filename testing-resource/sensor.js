@@ -39,6 +39,13 @@ srv.start().then((wot) => {
         });
     thing['http://schema.org/latitude'] = 25;
     thing['http://schema.org/longitude'] = 5;
+    thing['http://schema.org/priceSpecification'] = {
+        'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
+        money: {
+            'http://schema.org/currency': 'EUR',
+            'http://schema.org/amount': 1
+        }
+    };
     thing.expose();
 });
 
@@ -74,6 +81,13 @@ srv2.start().then((wot) => {
         });
     thing['http://schema.org/latitude'] = 20;
     thing['http://schema.org/longitude'] = 10;
+    thing['http://schema.org/priceSpecification'] = {
+        'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
+        money: {
+            'http://schema.org/currency': 'EUR',
+            'http://schema.org/amount': 2
+        }
+    };
     thing.expose();
 });
 
@@ -109,5 +123,19 @@ srv3.start().then((wot) => {
         });
     thing['http://schema.org/latitude'] = 10;
     thing['http://schema.org/longitude'] = 5;
+    thing.properties['status']['http://schema.org/priceSpecification'] = {
+        'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
+        money: {
+            'http://schema.org/currency': 'EUR',
+            'http://schema.org/amount': 4
+        }
+    };
+    thing.properties['position']['http://schema.org/priceSpecification'] = {
+        'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
+        money: {
+            'http://schema.org/currency': 'EUR',
+            'http://schema.org/amount': 2
+        }
+    };
     thing.expose();
 });

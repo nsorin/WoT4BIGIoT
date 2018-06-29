@@ -20,7 +20,7 @@
     "usePropertyFilters": true
   },
   "useMerge": true,
-  "useAggregate": true,
+  "useAggregate": false,
   "useHistory": false,
   "keepOfferings": false,
   "offeringConversionStrategy": "OFFERING_TO_THING",

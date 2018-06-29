@@ -234,7 +234,7 @@ export class MetadataManager {
         if (price && price.pricingModel === 'PER_BYTE') {
             price.money.amount /= count;
         }
-        if (MetadataManager.isPriceValid(price)) {
+        if (price) {
             return price;
         }
         if (MetadataManager.isPriceValid(thing[MetadataManager.PRICE])) {
@@ -305,11 +305,14 @@ export class MetadataManager {
             if (thing.properties.hasOwnProperty(i)) {
                 let extent = thing.properties[i][MetadataManager.SPATIAL_EXTENT];
                 // Check TD's spatial extent. If invalid, it cannot be used and the merge stops
+                let newExtent;
                 if (!MetadataManager.isSpatialExtentValid(extent)) {
-                    break;
+                    newExtent = MetadataManager.guessSpatialExtentFromOtherFormats(thing.properties[i]);
+                    if (!newExtent) break;
+                } else {
+                    // Copy TD extent
+                    newExtent = MetadataManager.copySpatialExtent(extent);
                 }
-                // Copy TD extent
-                let newExtent = MetadataManager.copySpatialExtent(extent);
                 if (city === '') {
                     city = cityOk ? newExtent.city : city;
                 } else if (city !== newExtent.city) {
@@ -323,23 +326,32 @@ export class MetadataManager {
                 }
             }
         }
-        return boundary ? {
-            city: city,
-            boundary: boundary
-        } : (MetadataManager.isSpatialExtentValid(thing[MetadataManager.SPATIAL_EXTENT]) ?
-            MetadataManager.copySpatialExtent(thing[MetadataManager.SPATIAL_EXTENT]) : {
-                city: MetadataManager.DEFAULT_EXTENT.city,
-                boundary: {
-                    l1: {
-                        lat: MetadataManager.DEFAULT_EXTENT.boundary.l1.lat,
-                        lng: MetadataManager.DEFAULT_EXTENT.boundary.l1.lng
-                    },
-                    l2: {
-                        lat: MetadataManager.DEFAULT_EXTENT.boundary.l2.lat,
-                        lng: MetadataManager.DEFAULT_EXTENT.boundary.l2.lng
-                    }
+        if (boundary || city) {
+            return {
+                city: city,
+                boundary: boundary
+            };
+        }
+        if (MetadataManager.isSpatialExtentValid(thing[MetadataManager.SPATIAL_EXTENT])) {
+            return MetadataManager.copySpatialExtent(thing[MetadataManager.SPATIAL_EXTENT]);
+        }
+        let other = MetadataManager.guessSpatialExtentFromOtherFormats(thing);
+        if (other) {
+            return other;
+        }
+        return {
+            city: MetadataManager.DEFAULT_EXTENT.city,
+            boundary: {
+                l1: {
+                    lat: MetadataManager.DEFAULT_EXTENT.boundary.l1.lat,
+                    lng: MetadataManager.DEFAULT_EXTENT.boundary.l1.lng
+                },
+                l2: {
+                    lat: MetadataManager.DEFAULT_EXTENT.boundary.l2.lat,
+                    lng: MetadataManager.DEFAULT_EXTENT.boundary.l2.lng
                 }
-            });
+            }
+        };
     }
 
     /**
@@ -462,8 +474,8 @@ export class MetadataManager {
      */
     private static sumPrices(p1: any, p2: any) {
         // An invalid price becomes default
-        p1 = MetadataManager.isPriceValid(p1) ? p1 : {pricingModel: MetadataManager.FREE};
-        p2 = MetadataManager.isPriceValid(p2) ? p2 : {pricingModel: MetadataManager.FREE};
+        p1 = p1 ? p1 : {pricingModel: MetadataManager.FREE};
+        p2 = p2 ? p2 : {pricingModel: MetadataManager.FREE};
         // If one of the two is free, return the other
         if (p1.pricingModel === MetadataManager.FREE) {
             return p2;

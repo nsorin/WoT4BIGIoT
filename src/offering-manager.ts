@@ -55,7 +55,7 @@ export class OfferingManager {
                 offering.inputData = route.convertedInputSchema.concat(route.propertyFiltersSchema);
                 offering.outputData = route.convertedOutputSchema;
             } else if (propertyIndexes.length === 1) {
-                let property = refThing.actions[actionIndex];
+                let property = refThing.properties[propertyIndexes[0]];
                 offering = new bigiot.offering(route.uri, MetadataManager.guessCategory(refThing, property));
                 offering.license = MetadataManager.guessLicense(refThing, property);
                 offering.price = MetadataManager.guessPrice(refThing, property);
