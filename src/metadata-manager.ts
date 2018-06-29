@@ -273,7 +273,22 @@ export class MetadataManager {
         if (MetadataManager.isSpatialExtentValid(thing[MetadataManager.SPATIAL_EXTENT])) {
             return MetadataManager.copySpatialExtent(thing[MetadataManager.SPATIAL_EXTENT]);
         }
-        return MetadataManager.DEFAULT_EXTENT;
+        // Attempt to find metadata in a format other than the usual BIG IoT model format
+        let other = MetadataManager.guessSpatialExtentFromOtherFormats(interaction);
+        other = other ? other : MetadataManager.guessSpatialExtentFromOtherFormats(thing);
+        return other ? other : {
+            city: MetadataManager.DEFAULT_EXTENT.city,
+            boundary: {
+                l1: {
+                    lat: MetadataManager.DEFAULT_EXTENT.boundary.l1.lat,
+                    lng: MetadataManager.DEFAULT_EXTENT.boundary.l1.lng
+                },
+                l2: {
+                    lat: MetadataManager.DEFAULT_EXTENT.boundary.l2.lat,
+                    lng: MetadataManager.DEFAULT_EXTENT.boundary.l2.lng
+                }
+            }
+        };
     }
 
     /**
@@ -300,14 +315,11 @@ export class MetadataManager {
                 } else if (city !== newExtent.city) {
                     cityOk = false;
                 }
-                if (firstSet) {
+                if (firstSet && boundary) {
                     boundary = MetadataManager.mergeBoundaries(boundary, newExtent.boundary);
                 } else {
                     boundary = newExtent.boundary;
                     firstSet = true;
-                }
-                if (boundary === null) {
-                    break;
                 }
             }
         }
@@ -351,17 +363,14 @@ export class MetadataManager {
             } else if (city !== extent.city) {
                 cityOk = false;
             }
-            if (firstSet) {
+            if (firstSet && boundary) {
                 boundary = MetadataManager.mergeBoundaries(boundary, extent.boundary);
             } else {
                 boundary = extent.boundary;
                 firstSet = true;
             }
-            if (boundary === null) {
-                break;
-            }
         }
-        return boundary ? {
+        return boundary || city ? {
             city: city,
             boundary: boundary
         } : {
@@ -497,7 +506,7 @@ export class MetadataManager {
      * @param tdExtent
      * @return {any}
      */
-    private static copySpatialExtent(tdExtent: any) : any {
+    private static copySpatialExtent(tdExtent: any): any {
         return {
             city: tdExtent[MetadataManager.CITY] ? tdExtent[MetadataManager.CITY] : '',
             boundary: tdExtent[MetadataManager.BOUNDARY] ? {
@@ -511,6 +520,38 @@ export class MetadataManager {
                 } : null
             } : null
         };
+    }
+
+    /**
+     * Try to guess the spatial extent for an interaction or thing based on schema.org properties that might be present
+     * in the TD (other than the BIG IoT model).
+     * @param thingOrInteraction
+     * @return {any}
+     */
+    private static guessSpatialExtentFromOtherFormats(thingOrInteraction: any): any {
+        // Check for direct address
+        if (thingOrInteraction.hasOwnProperty(MetadataManager.CITY)) {
+            return {city: thingOrInteraction[MetadataManager.CITY]};
+        }
+        // Check for direct lat/long
+        if (thingOrInteraction.hasOwnProperty(MetadataManager.LATITUDE)
+            && thingOrInteraction.hasOwnProperty(MetadataManager.LATITUDE)) {
+            return {
+                city: '',
+                boundary: {
+                    l1: {
+                        lat: thingOrInteraction[MetadataManager.LATITUDE],
+                        lng: thingOrInteraction[MetadataManager.LONGITUDE]
+                    },
+                    l2: {
+                        lat: thingOrInteraction[MetadataManager.LATITUDE],
+                        lng: thingOrInteraction[MetadataManager.LONGITUDE]
+                    }
+                }
+            }
+        }
+        // TODO: Support other formats
+        return null;
     }
 
     // --- Public validity checkers

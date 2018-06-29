@@ -37,6 +37,8 @@ srv.start().then((wot) => {
                 });
             });
         });
+    thing['http://schema.org/latitude'] = 25;
+    thing['http://schema.org/longitude'] = 5;
     thing.expose();
 });
 
@@ -70,6 +72,8 @@ srv2.start().then((wot) => {
                 });
             });
         });
+    thing['http://schema.org/latitude'] = 20;
+    thing['http://schema.org/longitude'] = 10;
     thing.expose();
 });
 
@@ -103,5 +107,7 @@ srv3.start().then((wot) => {
                 });
             });
         });
+    thing['http://schema.org/latitude'] = 10;
+    thing['http://schema.org/longitude'] = 5;
     thing.expose();
 });
