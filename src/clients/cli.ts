@@ -196,9 +196,9 @@ function editOffering(rl: any, offeringList: Array<any>, index) {
                 askLicense(rl, offeringList[index], () => {
                     askSpatialExtent(rl, offeringList[index], () => {
                         askPrice(rl, offeringList[index], () => {
-                             editOffering(rl, offeringList, ++index).then(() => {
-                                 resolve();
-                             });
+                            editOffering(rl, offeringList, ++index).then(() => {
+                                resolve();
+                            });
                         });
                     });
                 });
@@ -234,7 +234,7 @@ function askLicense(rl: any, offering: any, callback: any) {
             callback();
         } else {
             console.log('Invalid input:', answer);
-            this.askLicense(offering, callback);
+            askLicense(rl, offering, callback);
         }
     });
 }
@@ -254,7 +254,16 @@ function askSpatialExtent(rl: any, offering: any, callback: any) {
         } else {
             // If no city, we need a boundary
             offering.extent.boundary = offering.extent.boundary ?
-                offering.extent.boundary : MetadataManager.DEFAULT_BOUNDARY;
+                offering.extent.boundary : {
+                    l1: {
+                        lat: MetadataManager.DEFAULT_BOUNDARY.l1.lat,
+                        lng: MetadataManager.DEFAULT_BOUNDARY.l1.lng
+                    },
+                    l2: {
+                        lat: MetadataManager.DEFAULT_BOUNDARY.l2.lat,
+                        lng: MetadataManager.DEFAULT_BOUNDARY.l2.lng
+                    }
+                };
             askL1Latitude(rl, offering, callback);
         }
     });
@@ -268,7 +277,7 @@ function askPrice(rl: any, offering: any, callback: any) {
         answer = answer.replace(/(\r\n\t|\n|\r\t)/, '');
         if (answer && MetadataManager.PRICING_MODELS.indexOf(answer) === -1) {
             console.log('Invalid input:', answer);
-            this.askPrice(rl, offering, callback);
+            askPrice(rl, offering, callback);
         } else {
             if (answer) {
                 offering.price.pricingModel = answer;
@@ -282,7 +291,10 @@ function askPrice(rl: any, offering: any, callback: any) {
                 offering.price.money =
                     offering.price.money ?
                         offering.price.money
-                        : MetadataManager.DEFAULT_MONEY;
+                        : {
+                            amount: MetadataManager.DEFAULT_AMOUNT,
+                            currency: MetadataManager.DEFAULT_CURRENCY
+                        };
                 askCurrency(rl, offering, callback);
             }
         }
@@ -368,7 +380,7 @@ function askCurrency(rl: any, offering: any, callback: any) {
 function askAmount(rl: any, offering: any, callback: any) {
     rl.question('Amount of money for ' + offering.name + '? (Suggested: '
         + offering.price.money.amount + ')\n', (answer) => {
-        if (isNaN(answer)) {
+        if (isNaN(answer) || Number(answer) < 0) {
             console.log('Invalid input:', answer);
             askAmount(rl, offering, callback);
         } else if (answer === '') {
