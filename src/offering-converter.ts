@@ -1,7 +1,6 @@
 import {Configuration} from "./configuration";
 import bigiot = require('../bigiot-js');
-import {Thing, EventFragment, PropertyFragment, ActionFragment, Form, serializeTD} from "../thingweb.node-wot/packages/td-tools";
-import fs = require('fs');
+import {Thing, EventFragment, PropertyFragment, ActionFragment, Form} from "../thingweb.node-wot/packages/td-tools";
 import sanitize = require('sanitize-filename');
 import {MetadataManager} from "./metadata-manager";
 
@@ -9,6 +8,8 @@ export class OfferingConverter {
 
     private static readonly PROVIDER_URI = "provider/";
     private static readonly OFFERING_URI = "offering/";
+    private static readonly SEMANTIC_TYPE = "@type";
+    private static readonly SEMANTIC_ID = "@id";
 
     private readonly config: Configuration;
     private readonly consumer: any;
@@ -17,7 +18,7 @@ export class OfferingConverter {
     constructor(config: Configuration) {
         this.config = config;
         this.consumer = new bigiot.consumer(this.config.market.consumerId,
-            this.config.market.consumerSecret, this.config.market.marketplaceUrl);
+            this.config.market.consumerSecret, this.config.market.marketplaceUrlForConsumer);
     }
 
     public init(): Promise<any> {
@@ -40,13 +41,15 @@ export class OfferingConverter {
             this.consumer.subscribe(offeringId).then((data) => {
                 let offering = data.offering;
                 let thing = new Thing();
-                thing['@type'] = [MetadataManager.OFFERING_TYPE];
+                thing[OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.OFFERING_TYPE];
                 thing.name = offering.name ? offering.name : offering.id;
-                thing.id = this.config.market.marketplaceUrl + OfferingConverter.OFFERING_URI + offeringId;
-                thing['@id'] = this.config.market.marketplaceUrl + OfferingConverter.OFFERING_URI + offeringId;
+                thing.id = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
+                thing[OfferingConverter.SEMANTIC_ID] = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
                 this.generateInteraction(offering, thing);
                 // TODO: Handle metadata
                 resolve(thing);
+            }).catch((err) => {
+                console.log('There was an error when subscribing to the offering:', err);
             });
         });
     }
@@ -65,6 +68,8 @@ export class OfferingConverter {
                 }
                 // TODO: Handle metadata
                 resolve(thing);
+            }).catch((err) => {
+                console.log('There was an error when subscribing to an offering:', err);
             });
         });
     }
@@ -83,16 +88,18 @@ export class OfferingConverter {
                         let providerId = values[i].offering.provider.id;
                         providerMap[providerId] = new Thing();
                         providerMap[providerId].name = providerId;
-                        providerMap[providerId]['@type'] = [MetadataManager.PROVIDER_TYPE];
-                        providerMap[providerId].id = this.config.market.marketplaceUrl
+                        providerMap[providerId][OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.PROVIDER_TYPE];
+                        providerMap[providerId].id = this.config.market.marketplaceUrlForConsumer
                             + OfferingConverter.PROVIDER_URI + providerId;
-                        providerMap[providerId]['@id'] = this.config.market.marketplaceUrl
+                        providerMap[providerId][OfferingConverter.SEMANTIC_ID] = this.config.market.marketplaceUrlForConsumer
                             + OfferingConverter.PROVIDER_URI + providerId;
                     }
                     this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id]);
                     // TODO: Handle additional metadata
                 }
                 resolve(providerMap.values());
+            }).catch((err) => {
+                console.log('There was an error when subscribing to an offering:', err);
             });
         });
     }
@@ -104,7 +111,7 @@ export class OfferingConverter {
         }
         // Create interaction name
         let name = offering.name ? sanitize(offering.name) : sanitize(offering.id);
-        let uri = this.config.market.marketplaceUrl + OfferingConverter.OFFERING_URI + offering.id;
+        let uri = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offering.id;
         // Create forms
         let forms: Array<Form> = OfferingConverter.convertEndpointsToForm(offering.endpoints);
         // Identify interaction pattern
@@ -114,7 +121,7 @@ export class OfferingConverter {
             event.forms = forms;
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(event, offering);
-            event['@id'] = uri;
+            event[OfferingConverter.SEMANTIC_ID] = uri;
             thing.events[name] = event;
         } else if ((!offering.inputs || offering.inputs.length === 0) && offering.outputs && offering.outputs.length > 0
             && endpoint.endpointType === 'HTTP_GET') {
@@ -126,7 +133,7 @@ export class OfferingConverter {
             property.forms = forms;
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(property, offering);
-            property['@id'] = uri;
+            property[OfferingConverter.SEMANTIC_ID] = uri;
             thing.properties[name] = property;
         } else if ((!offering.outputs || offering.outputs.length === 0) && offering.inputs && offering.inputs.length > 0
             && endpoint.endpointType === 'HTTP_PUT') {
@@ -138,7 +145,7 @@ export class OfferingConverter {
             Object.assign(property, OfferingConverter.convertInputSchemaSimple(offering.inputs));
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(property, offering);
-            property['@id'] = uri;
+            property[OfferingConverter.SEMANTIC_ID] = uri;
             thing.properties[name] = property;
         } else {
             // Then this is an action (default)
@@ -148,7 +155,7 @@ export class OfferingConverter {
             action.forms = forms;
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(action, offering);
-            action['@id'] = uri;
+            action[OfferingConverter.SEMANTIC_ID] = uri;
             thing.actions[name] = action;
         }
     }
@@ -185,7 +192,7 @@ export class OfferingConverter {
         };
         for (let i = 0; i < input.length; i++) {
             schema.properties[input[i].name] = {
-                '@type': [input[i].rdfAnnotation.uri],
+                [OfferingConverter.SEMANTIC_TYPE]: [input[i].rdfAnnotation.uri],
                 type: 'string'
             };
         }
@@ -202,7 +209,7 @@ export class OfferingConverter {
         };
         for (let i = 0; i < output.length; i++) {
             schema.items.properties[output[i].name] = {
-                '@type': [output[i].rdfAnnotation.uri],
+                [OfferingConverter.SEMANTIC_TYPE]: [output[i].rdfAnnotation.uri],
                 type: 'string'
             };
         }

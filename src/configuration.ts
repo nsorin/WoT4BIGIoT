@@ -23,7 +23,8 @@ class AggregationConfig {
 }
 
 class MarketConfig {
-    public marketplaceUrl: string;
+    public marketplaceUrlForProvider: string;
+    public marketplaceUrlForConsumer: string;
     public providerId: string;
     public providerSecret: string;
     public consumerId: string;
@@ -79,7 +80,8 @@ export class Configuration {
                     this.aggregation.usePropertyFilters = body.aggregation.usePropertyFilters;
 
                     // Marketplace config
-                    this.market.marketplaceUrl = body.market.marketplaceUrl;
+                    this.market.marketplaceUrlForProvider = body.market.marketplaceUrlForProvider;
+                    this.market.marketplaceUrlForConsumer = body.market.marketplaceUrlForConsumer;
                     this.market.providerId = body.market.providerId;
                     this.market.providerSecret = body.market.providerSecret;
                     this.market.consumerId = body.market.consumerId;

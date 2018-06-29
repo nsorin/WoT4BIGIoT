@@ -5,11 +5,12 @@
     "onDisk": false
   },
   "market": {
-    "marketplaceUrl": "https://market-dev.big-iot.org/",
+    "marketplaceUrlForProvider": "https://market-dev.big-iot.org/",
+    "marketplaceUrlForConsumer": "https://market.big-iot.org/",
     "providerId": "NSTest-NSProvider",
     "providerSecret": "C2ZEvzPbRg-iJAYhVAyLAQ==",
-    "consumerId": "NSTest-NSConsumer",
-    "consumerSecret": "GPuwiBTGQHioPicch2flcQ=="
+    "consumerId": "Nicolas-TestConsumer",
+    "consumerSecret": "9OgegOioR-uNXeylXeK0aA=="
   },
   "gateway": {
     "host":"127.0.0.1",

@@ -22,7 +22,7 @@ export class OfferingManager {
         this.config = config;
         this.baseUri = this.config.gateway.host + ':' + this.config.gateway.port;
         this.provider = new bigiot.provider(this.config.market.providerId, this.config.market.providerSecret,
-            this.config.market.marketplaceUrl);
+            this.config.market.marketplaceUrlForProvider);
     }
 
     public init(): Promise<any> {
