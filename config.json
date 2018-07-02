@@ -2,7 +2,7 @@
   "history": {
     "period": 5000,
     "limit": 1000,
-    "onDisk": false
+    "onDisk": true
   },
   "market": {
     "marketplaceUrlForProvider": "https://market-dev.big-iot.org/",
@@ -21,7 +21,7 @@
   },
   "useMerge": true,
   "useAggregate": false,
-  "useHistory": false,
+  "useHistory": true,
   "keepOfferings": false,
   "offeringConversionStrategy": "PROVIDER_TO_THING",
   "moreLogs": true

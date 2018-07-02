@@ -1,0 +1,1 @@
+This directory contains the JSON things saved by the cli.

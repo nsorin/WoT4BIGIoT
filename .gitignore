@@ -3,4 +3,5 @@ bigiot-js/
 .idea/
 node_modules/
 dist/
-output/
+output/*.json
+stores/*.store
