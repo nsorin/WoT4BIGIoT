@@ -88,6 +88,7 @@ export class Api {
             for (let i = 0; i < tds.length; i++) {
                 try {
                     let thing = parseTD(tds[i]);
+                    thing = this.thingAnalyzer.resolveContexts(thing, ThingAnalyzer.findPrefixes(thing));
                     parsedThings.push(thing);
                 } catch (e) {
                     console.log('Could not parse thing at index', i, ':', e);

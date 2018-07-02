@@ -79,8 +79,8 @@ srv2.start().then((wot) => {
                 });
             });
         });
-    thing['http://schema.org/latitude'] = 20;
-    thing['http://schema.org/longitude'] = 10;
+    thing['schema:latitude'] = 20;
+    thing['schema:longitude'] = 10;
     thing['http://schema.org/priceSpecification'] = {
         'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
         money: {

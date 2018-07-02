@@ -37,6 +37,69 @@ export class ThingAnalyzer {
     }
 
     /**
+     * Find the prefixes in the @context property of a Thing
+     * @param {Thing} thing
+     */
+    public static findPrefixes(thing: Thing): any {
+        let result: any = {};
+        let contexts = thing['@context'];
+        if (contexts && Array.isArray(contexts)) {
+            for (let i = 0; i < contexts.length; i++) {
+                if (typeof contexts[i] == "object") {
+                    Object.assign(result, contexts[i]);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Replace all prefixed URIs with the full URIs based on the information available in the @context property.
+     * @param jsonLD
+     * @param prefixes
+     * @return {any}
+     */
+    public resolveContexts(jsonLD: any, prefixes: any): any {
+        // If there are no prefixes, no need to go any further
+        if (typeof prefixes !== "object" || Object.keys(prefixes).length === 0) return;
+
+        if (typeof jsonLD === 'object') {
+            if (Array.isArray(jsonLD)) {
+                for (let i = 0; i < jsonLD.length; i++) {
+                    jsonLD[i] = this.resolveContexts(jsonLD[i], prefixes);
+                }
+            } else {
+                for (let i in jsonLD) {
+                    if (jsonLD.hasOwnProperty(i)) {
+                        // Resolve contexts for the next level
+                        jsonLD[i] = this.resolveContexts(jsonLD[i], prefixes);
+                        // Check if prefixed (and not starting with http:// for instance)
+                        if (/^.+:[^, \\/]+.$/.test(i)) {
+                            for (let j in prefixes) {
+                                if (prefixes.hasOwnProperty(j) && i.startsWith(j + ':')) {
+                                    let newKey = i.replace(j + ':', prefixes[j]);
+                                    jsonLD[newKey] = jsonLD[i];
+                                    delete jsonLD[i];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (typeof jsonLD === "string") {
+            // Check if prefixed (and not starting with http:// for instance)
+            if (/^.+:[^, \\/]+.$/.test(jsonLD)) {
+                for (let j in prefixes) {
+                    if (prefixes.hasOwnProperty(j) && jsonLD.startsWith(j + ':')) {
+                        jsonLD = jsonLD.replace(j + ':', prefixes[j]);
+                    }
+                }
+            }
+        }
+        return jsonLD;
+    }
+
+    /**
      * Compare two things to see if they can be aggregated together.
      * @param {Thing} thing1
      * @param {Thing} thing2
