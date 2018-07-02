@@ -23,6 +23,6 @@
   "useAggregate": false,
   "useHistory": false,
   "keepOfferings": false,
-  "offeringConversionStrategy": "OFFERING_TO_THING",
+  "offeringConversionStrategy": "PROVIDER_TO_THING",
   "moreLogs": true
 }

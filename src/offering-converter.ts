@@ -38,18 +38,24 @@ export class OfferingConverter {
 
     public convertOne(offeringId: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.consumer.subscribe(offeringId).then((data) => {
+            this.consumer.get(offeringId).then((data) => {
+                console.log(data);
                 let offering = data.offering;
                 let thing = new Thing();
                 thing[OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.OFFERING_TYPE];
                 thing.name = offering.name ? offering.name : offering.id;
                 thing.id = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
                 thing[OfferingConverter.SEMANTIC_ID] = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
-                this.generateInteraction(offering, thing);
+                try {
+                    this.generateInteraction(offering, thing);
+                } catch (e) {
+                    console.log('Error in interaction generation:', e);
+                }
                 // TODO: Handle metadata
                 resolve(thing);
             }).catch((err) => {
-                console.log('There was an error when subscribing to the offering:', err);
+                console.log('Could not get the offering from the marketplace.');
+                console.log(err);
             });
         });
     }
@@ -58,18 +64,23 @@ export class OfferingConverter {
         return new Promise((resolve, reject) => {
             let promises: Array<Promise<any>> = [];
             for (let i = 0; i < offeringIds.length; i++) {
-                promises.push(this.consumer.subscribe(offeringIds[i]));
+                promises.push(this.consumer.get(offeringIds[i]));
             }
             Promise.all(promises).then((values) => {
                 let thing = new Thing();
                 thing.name = "marketplace"; // Find a better nale / use constants
                 for (let i = 0; i < values.length; i++) {
-                    this.generateInteraction(values[i].offering, thing);
+                    try {
+                        this.generateInteraction(values[i].offering, thing);
+                    } catch (e) {
+                        console.log('Error in interaction generation:', e);
+                    }
                 }
                 // TODO: Handle metadata
                 resolve(thing);
             }).catch((err) => {
-                console.log('There was an error when subscribing to an offering:', err);
+                console.log('Could not get the offering from the marketplace.');
+                console.log(err);
             });
         });
     }
@@ -78,9 +89,10 @@ export class OfferingConverter {
         return new Promise((resolve, reject) => {
             let promises: Array<Promise<any>> = [];
             for (let i = 0; i < offeringIds.length; i++) {
-                promises.push(this.consumer.subscribe(offeringIds[i]));
+                promises.push(this.consumer.get(offeringIds[i]));
             }
             Promise.all(promises).then((values) => {
+                console.log('Values are:', values);
                 let providerMap: any = {};
                 for (let i = 0; i < values.length; i++) {
                     if (!providerMap.hasOwnProperty(values[i].offering.provider.id)) {
@@ -94,12 +106,17 @@ export class OfferingConverter {
                         providerMap[providerId][OfferingConverter.SEMANTIC_ID] = this.config.market.marketplaceUrlForConsumer
                             + OfferingConverter.PROVIDER_URI + providerId;
                     }
-                    this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id]);
+                    try {
+                        this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id]);
+                    } catch (e) {
+                        console.log('Error in interaction generation:', e);
+                    }
                     // TODO: Handle additional metadata
                 }
-                resolve(providerMap.values());
+                resolve(Object.keys(providerMap).map(key => providerMap[key]));
             }).catch((err) => {
-                console.log('There was an error when subscribing to an offering:', err);
+                console.log('Could not get the offering from the marketplace.');
+                console.log(err);
             });
         });
     }
