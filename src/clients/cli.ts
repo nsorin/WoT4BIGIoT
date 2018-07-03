@@ -6,6 +6,7 @@ import path = require('path');
 import {Api} from '../api';
 import {MetadataManager} from '../metadata-manager';
 import {Thing, serializeTD} from "../../thingweb.node-wot/packages/td-tools";
+import {GatewayRoute} from "../gateway-route";
 
 const CONVERT_THINGS = 'convert_things';
 const SHOW_OFFERINGS_TO_REGISTER = 'show_offerings_to_register';
@@ -153,7 +154,7 @@ function registerOfferings(api: Api, uris: Array<string>) {
 function registerAllOfferings(api: Api) {
     return new Promise((resolve, reject) => {
         let list = api.getOfferingsToRegister();
-        editOffering(rl, list, 0).then(() => {
+        editOffering(api, rl, list, 0).then(() => {
             api.registerAllOfferings().then(() => {
                 console.log('All offerings registered!');
                 resolve();
@@ -189,15 +190,19 @@ function showRegisteredOfferings(api: Api): Promise<any> {
 
 // --- TOOLS
 
-function editOffering(rl: any, offeringList: Array<any>, index) {
+function editOffering(api: Api, rl: any, offeringList: Array<any>, index) {
     return new Promise((resolve, reject) => {
         if (index < offeringList.length) {
             askCategory(rl, offeringList[index], () => {
                 askLicense(rl, offeringList[index], () => {
                     askSpatialExtent(rl, offeringList[index], () => {
                         askPrice(rl, offeringList[index], () => {
-                            editOffering(rl, offeringList, ++index).then(() => {
-                                resolve();
+                            askSemanticType(api, rl, offeringList[index].inputData, 0, () => {
+                                askSemanticType(api, rl, offeringList[index].outputData, 0, () => {
+                                    editOffering(api, rl, offeringList, ++index).then(() => {
+                                        resolve();
+                                    });
+                                });
                             });
                         });
                     });
@@ -390,6 +395,36 @@ function askAmount(rl: any, offering: any, callback: any) {
             callback();
         }
     });
+}
+
+function askSemanticType(api: Api, rl: any, fieldList: Array<any>, index: number, callback) {
+    if (!fieldList || index >= fieldList.length) {
+        // If no field left, use callback
+        callback();
+    } else if (Object.keys(MetadataManager.DATA_TYPE_CONVERSION).map(e => MetadataManager.DATA_TYPE_CONVERSION[e])
+        .indexOf(fieldList[index].rdfUri) === -1) {
+        // If this is not a default type, skip it
+        askSemanticType(api, rl, fieldList, ++index, callback);
+    } else {
+        // Use semantic search to look for a fitting semantic type.
+        api.getSemanticTypeSuggestions(fieldList[index].name.replace(GatewayRoute.MIN_PREFIX, '').replace(GatewayRoute.MAX_PREFIX, ''))
+            .then((result) => {
+
+                console.log("Suggested types for", fieldList[index].name + ":");
+                for (let i = 0; i < result.length; i++) {
+                    console.log(result[i].uri, "(" + result[i].description + ")");
+                }
+                rl.question("Semantic type for " + fieldList[index].name + "? (Default: " + fieldList[index].rdfUri + ")\n",
+                    (answer) => {
+                        answer = answer.replace(/(\r\n\t|\n|\r\t)/, '');
+                        if (answer) {
+                            // TODO: Check validity?
+                            fieldList[index].rdfUri = answer;
+                        }
+                        askSemanticType(api, rl, fieldList, ++index, callback);
+                    });
+            });
+    }
 }
 
 function saveThings(things: Array<Thing>) {

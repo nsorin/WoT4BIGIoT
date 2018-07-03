@@ -26,8 +26,8 @@
     "maxSuggestions": 10
   },
   "useMerge": true,
-  "useAggregate": false,
-  "useHistory": true,
+  "useAggregate": true,
+  "useHistory": false,
   "keepOfferings": false,
   "offeringConversionStrategy": "PROVIDER_TO_THING",
   "moreLogs": true
