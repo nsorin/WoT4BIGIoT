@@ -14,7 +14,7 @@ srv.addServer(new HttpServer(port1, IP));
 srv.start().then((wot) => {
     let thing = wot.produce({name: 'MySensor'});
 
-    thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
+    thing['@context'] = [thing['@context'], {schema: "https://schema.org/"}];
 
     thing.addProperty('status', {
         writable: false,
@@ -37,13 +37,13 @@ srv.start().then((wot) => {
                 });
             });
         });
-    thing['http://schema.org/latitude'] = 25;
-    thing['http://schema.org/longitude'] = 5;
-    thing['http://schema.org/priceSpecification'] = {
+    thing['https://schema.org/latitude'] = 25;
+    thing['https://schema.org/longitude'] = 5;
+    thing['https://schema.org/priceSpecification'] = {
         'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
         money: {
-            'http://schema.org/currency': 'EUR',
-            'http://schema.org/amount': 1
+            'https://schema.org/currency': 'EUR',
+            'https://schema.org/amount': 1
         }
     };
     thing.expose();
@@ -56,7 +56,7 @@ srv2.addServer(new HttpServer(port2, IP));
 srv2.start().then((wot) => {
     let thing = wot.produce({name: 'MySensor'});
 
-    thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
+    thing['@context'] = [thing['@context'], {schema: "https://schema.org/"}];
 
     thing.addProperty('status', {
         writable: false,
@@ -81,11 +81,11 @@ srv2.start().then((wot) => {
         });
     thing['schema:latitude'] = 20;
     thing['schema:longitude'] = 10;
-    thing['http://schema.org/priceSpecification'] = {
+    thing['https://schema.org/priceSpecification'] = {
         'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
         money: {
-            'http://schema.org/currency': 'EUR',
-            'http://schema.org/amount': 2
+            'https://schema.org/currency': 'EUR',
+            'https://schema.org/amount': 2
         }
     };
     thing.expose();
@@ -98,7 +98,7 @@ srv3.addServer(new HttpServer(port3, IP));
 srv3.start().then((wot) => {
     let thing = wot.produce({name: 'MySensor'});
 
-    thing['@context'] = [thing['@context'], {schema: "http://schema.org/"}];
+    thing['@context'] = [thing['@context'], {schema: "https://schema.org/"}];
 
     thing.addProperty('status', {
         writable: false,
@@ -121,20 +121,20 @@ srv3.start().then((wot) => {
                 });
             });
         });
-    thing['http://schema.org/latitude'] = 10;
-    thing['http://schema.org/longitude'] = 5;
-    thing.properties['status']['http://schema.org/priceSpecification'] = {
+    thing['https://schema.org/latitude'] = 10;
+    thing['https://schema.org/longitude'] = 5;
+    thing.properties['status']['https://schema.org/priceSpecification'] = {
         'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
         money: {
-            'http://schema.org/currency': 'EUR',
-            'http://schema.org/amount': 4
+            'https://schema.org/currency': 'EUR',
+            'https://schema.org/amount': 4
         }
     };
-    thing.properties['position']['http://schema.org/priceSpecification'] = {
+    thing.properties['position']['https://schema.org/priceSpecification'] = {
         'http://schema.big-iot.org/core/pricingModel': 'PER_ACCESS',
         money: {
-            'http://schema.org/currency': 'EUR',
-            'http://schema.org/amount': 2
+            'https://schema.org/currency': 'EUR',
+            'https://schema.org/amount': 2
         }
     };
     thing.expose();

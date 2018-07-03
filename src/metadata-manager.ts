@@ -6,35 +6,37 @@ import {Thing} from "../thingweb.node-wot/packages/td-tools";
 export class MetadataManager {
 
     // Semantic types
-    public static readonly DEFAULT_DATA_TYPE = "http://schema.org/DataType";
+    public static readonly DEFAULT_DATA_TYPE = "https://schema.org/DataType";
     public static readonly DATA_TYPE_CONVERSION = {
-        string: "http://schema.org/Text",
-        boolean: "http://schema.org/Boolean",
-        number: "http://schema.org/Number",
-        integer: "http://schema.org/Integer",
-        float: "http://schema.org/Float"
+        string: "https://schema.org/Text",
+        boolean: "https://schema.org/Boolean",
+        number: "https://schema.org/Number",
+        integer: "https://schema.org/Integer",
+        float: "https://schema.org/Float",
+        array: "https://schema.org/ItemList",
+        undefined: "https://schema.org/DataType"
     };
-    public static readonly DEFAULT_ARRAY_TYPE = "http://schema.org/ItemList";
+    public static readonly DEFAULT_ARRAY_TYPE = "https://schema.org/ItemList";
 
     public static readonly OFFERING_TYPE = "http://schema.big-iot.org/core/Offering";
     public static readonly PROVIDER_TYPE = "http://schema.big-iot.org/core/Provider";
 
 
     // BIGIOT Default Metadata
-    public static readonly CATEGORY = 'http://schema.org/category';
-    public static readonly LICENSE = 'http://schema.org/license';
+    public static readonly CATEGORY = 'https://schema.org/category';
+    public static readonly LICENSE = 'https://schema.org/license';
 
     // Price properties. Used when reading the thing only! The big iot lib does not use full uris.
-    public static readonly PRICE = 'http://schema.org/priceSpecification';
+    public static readonly PRICE = 'https://schema.org/priceSpecification';
     public static readonly PRICING_MODEL = 'http://schema.big-iot.org/core/pricingModel';
-    public static readonly CURRENCY = 'http://schema.org/currency';
+    public static readonly CURRENCY = 'https://schema.org/currency';
     public static readonly MONEY = 'money';
-    public static readonly AMOUNT = 'http://schema.org/amount';
+    public static readonly AMOUNT = 'https://schema.org/amount';
     public static readonly ACCESS_INTERFACE_TYPE = 'http://schema.big-iot.org/core/accessInterfaceType';
 
     // Spatial extent properties
-    public static readonly SPATIAL_EXTENT = 'http://schema.org/spatialCoverage';
-    public static readonly CITY = 'http://schema.org/address';
+    public static readonly SPATIAL_EXTENT = 'https://schema.org/spatialCoverage';
+    public static readonly CITY = 'https://schema.org/address';
     public static readonly BOUNDARY = 'boundary';
     public static readonly LAT_LONG_1 = 'l1';
     public static readonly LAT_LONG_2 = 'l2';
@@ -45,8 +47,8 @@ export class MetadataManager {
     public static readonly BIGIOT_URN_PREFIX = 'urn:big-iot:';
 
     // Other possible Metadata
-    public static readonly LATITUDE = 'http://schema.org/latitude';
-    public static readonly LONGITUDE = 'http://schema.org/longitude';
+    public static readonly LATITUDE = 'https://schema.org/latitude';
+    public static readonly LONGITUDE = 'https://schema.org/longitude';
 
     public static readonly LICENSES = [
         'OPEN_DATA_LICENSE',

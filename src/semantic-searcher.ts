@@ -34,7 +34,7 @@ export class SemanticSearcher {
                         let json = JSON.parse(body);
                         let index = 0;
                         let results: Array<SearchResult> = [];
-                        while (index < json.items.length && results.length < 10) {
+                        while (index < json.items.length && results.length < this.config.maxSuggestions) {
                             let item = json.items[index];
                             if (this.isValidResult(item.link)) {
                                 results.push(new SearchResult(item.link, item.snippet));

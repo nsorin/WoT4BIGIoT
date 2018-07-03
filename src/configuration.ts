@@ -35,6 +35,7 @@ class SearchConfig {
     public cseBase: string;
     public cseApiKey: string;
     public cseCx: string;
+    public maxSuggestions: number;
 }
 
 export class Configuration {
@@ -98,6 +99,7 @@ export class Configuration {
                     this.search.cseBase = body.search.cseBase;
                     this.search.cseApiKey = body.search.cseApiKey;
                     this.search.cseCx = body.search.cseCx;
+                    this.search.maxSuggestions = body.search.maxSuggestions;
 
                     //TODO: Other config
 

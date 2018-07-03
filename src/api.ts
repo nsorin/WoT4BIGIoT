@@ -4,7 +4,7 @@ import {Gateway} from "./gateway";
 import {OfferingManager} from "./offering-manager";
 import {OfferingConverter} from "./offering-converter";
 import {Configuration, OfferingToThing} from "./configuration";
-import {SemanticSearcher} from "./semantic-searcher";
+import {SearchResult, SemanticSearcher} from "./semantic-searcher";
 
 export class Api {
 
@@ -121,18 +121,33 @@ export class Api {
         }
     }
 
+    /**
+     * Get the list of all offerings waiting to be registered.
+     * @return {Array<any>}
+     */
     public getOfferingsToRegister() {
         return this.offeringManager.getOfferingsToRegister();
     }
 
+    /**
+     * Get the list of all offerings already registered on the marketplace for this session.
+     * @return {Array<any>}
+     */
     public getRegisteredOfferings() {
         return this.offeringManager.getRegisteredOfferings();
     }
 
+    /**
+     * Register all offerings currently waiting to be registered.
+     * @return {Promise<any>}
+     */
     public registerAllOfferings() {
         return this.offeringManager.registerOfferings();
     }
 
+    /**
+     * Delete all registered offerings from the marketplace.
+     */
     public deleteAllOfferings() {
         return this.offeringManager.unregisterOfferings(() => {
             console.log('Deleted all offerings!');
@@ -184,6 +199,15 @@ export class Api {
                 }
             }
         });
+    }
+
+    /**
+     * Get Semantic type suggestion for a field based on its name.
+     * @param {string} name
+     * @return {Promise<Array<SearchResult>>}
+     */
+    public getSemanticTypeSuggestions(name: string): Promise<Array<SearchResult>> {
+        return this.semanticSearcher.makePropertySearch(name);
     }
 
     /**

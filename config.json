@@ -22,7 +22,8 @@
   "search": {
     "cseBase": "https://www.googleapis.com/customsearch/v1?",
     "cseApiKey": "AIzaSyB5UxhPrAWfBIos4XY4TjbjLOLhAhCoJQE",
-    "cseCx": "003337605136560670378:hxwjlekwm6e"
+    "cseCx": "003337605136560670378:hxwjlekwm6e",
+    "maxSuggestions": 10
   },
   "useMerge": true,
   "useAggregate": false,
