@@ -31,6 +31,12 @@ class MarketConfig {
     public consumerSecret: string;
 }
 
+class SearchConfig {
+    public cseBase: string;
+    public cseApiKey: string;
+    public cseCx: string;
+}
+
 export class Configuration {
 
     public moreLogs: boolean;
@@ -44,6 +50,7 @@ export class Configuration {
     public gateway = new GatewayConfig();
     public aggregation = new AggregationConfig();
     public market = new MarketConfig();
+    public search = new SearchConfig();
 
     constructor () {
         //TODO: Is there anything to do?
@@ -86,6 +93,11 @@ export class Configuration {
                     this.market.providerSecret = body.market.providerSecret;
                     this.market.consumerId = body.market.consumerId;
                     this.market.consumerSecret = body.market.consumerSecret;
+
+                    // Semantic search config
+                    this.search.cseBase = body.search.cseBase;
+                    this.search.cseApiKey = body.search.cseApiKey;
+                    this.search.cseCx = body.search.cseCx;
 
                     //TODO: Other config
 

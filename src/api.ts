@@ -4,6 +4,7 @@ import {Gateway} from "./gateway";
 import {OfferingManager} from "./offering-manager";
 import {OfferingConverter} from "./offering-converter";
 import {Configuration, OfferingToThing} from "./configuration";
+import {SemanticSearcher} from "./semantic-searcher";
 
 export class Api {
 
@@ -14,6 +15,7 @@ export class Api {
     private offeringManager: OfferingManager;
     private gateway: Gateway;
     private offeringConverter: OfferingConverter;
+    private semanticSearcher: SemanticSearcher;
 
     private initComplete = false;
 
@@ -38,6 +40,7 @@ export class Api {
         return new Promise((resolve, reject) => {
             this.config.init(Api.CONFIG_SOURCE).then(() => {
                 this.thingAnalyzer = new ThingAnalyzer(this.config);
+                this.semanticSearcher = new SemanticSearcher(this.config);
                 this.offeringConverter = new OfferingConverter(this.config);
                 this.offeringManager = new OfferingManager(this.config);
                 this.offeringConverter.init().then(() => {
