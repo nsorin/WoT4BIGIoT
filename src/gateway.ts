@@ -57,23 +57,8 @@ export class Gateway {
      * @param {Array<Thing>} things
      */
     public addSingleThings(things: Array<Thing>) {
-        console.log('Received', things.length, 'to add without aggregation');
-        let alreadyUsedNames: Array<string> = [];
+        // console.log('Received', things.length, 'to add without aggregation');
         for (let i = 0; i < things.length; i++) {
-
-            // Rename duplicates
-            let fakeIndex = 0;
-            while (alreadyUsedNames.indexOf(things[i].name) > -1) {
-                console.log('Current thing name:', things[i].name, 'is already in use.');
-                let fakeIndexString = String(fakeIndex);
-                if (fakeIndex === 0) {
-                    things[i].name = things[i].name + (++fakeIndex);
-                } else {
-                    things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
-                }
-            }
-            alreadyUsedNames.push(things[i].name);
-
             if (this.config.useMerge) {
                 let propertyIndexes = [];
                 for (let j in things[i].properties) {

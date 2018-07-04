@@ -17,6 +17,12 @@ export class Api {
     private offeringConverter: OfferingConverter;
     private semanticSearcher: SemanticSearcher;
 
+    /**
+     * Used to store names/URIs that are already in use for offerings in this session.
+     * @type {any[]}
+     */
+    private alreadyUsedOfferingNames: Array<string> = [];
+
     private initComplete = false;
 
     /**
@@ -219,12 +225,10 @@ export class Api {
      * @param {Array<Thing>} things
      */
     private convertThingsDirectly(things: Array<Thing>): void {
-        let alreadyUsedNames: Array<string> = [];
         for (let i = 0; i < things.length; i++) {
             // Rename duplicates
             let fakeIndex = 0;
-            while (alreadyUsedNames.indexOf(things[i].name) > -1) {
-                console.log('Current thing name:', things[i].name, 'is already in use.');
+            while (this.alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
                 let fakeIndexString = String(fakeIndex);
                 if (fakeIndex === 0) {
                     things[i].name = things[i].name + (++fakeIndex);
@@ -232,7 +236,7 @@ export class Api {
                     things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
                 }
             }
-            alreadyUsedNames.push(things[i].name);
+            this.alreadyUsedOfferingNames.push(things[i].name);
             this.offeringManager.addOfferingsForThing(things[i]);
         }
     }
@@ -259,11 +263,10 @@ export class Api {
                     }
                 }
                 // Register things by type
-                let alreadyUsedNames: Array<string> = [];
                 for (let i = 0; i < identicalThings.length; i++) {
                     // Rename duplicates
                     let fakeIndex = 0;
-                    while (alreadyUsedNames.indexOf(identicalThings[i][0].name) > -1) {
+                    while (this.alreadyUsedOfferingNames.indexOf(identicalThings[i][0].name) > -1) {
                         let fakeIndexString = String(fakeIndex);
                         if (fakeIndex === 0) {
                             identicalThings[i][0].name = identicalThings[i][0].name + (++fakeIndex);
@@ -271,12 +274,24 @@ export class Api {
                             identicalThings[i][0].name = identicalThings[i][0].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
                         }
                     }
-                    alreadyUsedNames.push(identicalThings[i][0].name);
+                    this.alreadyUsedOfferingNames.push(identicalThings[i][0].name);
                     // Once the name is unique, add to the gateway.
-                    // TODO: Check names across calls (store the already used name)
                     this.gateway.addAggregatedThings(identicalThings[i]);
                 }
             } else {
+                for (let i = 0; i < things.length; i++) {
+                    // Rename duplicates
+                    let fakeIndex = 0;
+                    while (this.alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
+                        let fakeIndexString = String(fakeIndex);
+                        if (fakeIndex === 0) {
+                            things[i].name = things[i].name + (++fakeIndex);
+                        } else {
+                            things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
+                        }
+                    }
+                    this.alreadyUsedOfferingNames.push(things[i].name);
+                }
                 gateway.addSingleThings(things);
             }
         });
