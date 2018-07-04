@@ -5,6 +5,9 @@ import {Thing} from "../thingweb.node-wot/packages/td-tools";
 import {MetadataManager} from "./metadata-manager";
 import sanitize = require('sanitize-filename');
 
+/**
+ * Class used to manage Offering registrations on the marketplace.
+ */
 export class OfferingManager {
 
     private readonly config: Configuration;
@@ -18,6 +21,10 @@ export class OfferingManager {
     private static readonly ACCESS_TYPE = 'EXTERNAL';
     private static readonly ENDPOINT_TYPE_PREFIX = 'HTTP_';
 
+    /**
+     * Constructor. Init needs to be called.
+     * @param {Configuration} config
+     */
     constructor(config: Configuration) {
         this.config = config;
         this.baseUri = this.config.gateway.host + ':' + this.config.gateway.port;
@@ -25,6 +32,10 @@ export class OfferingManager {
             this.config.market.marketplaceUrlForProvider);
     }
 
+    /**
+     * Init method. Authenticate the provider to the marketplace.
+     * @return {Promise<any>}
+     */
     public init(): Promise<any> {
         return new Promise((resolve, reject) => {
             if (this.initDone) {
@@ -40,6 +51,14 @@ export class OfferingManager {
         });
     }
 
+    /**
+     * Add an offering based on a GatewayRoute. The Offering is added to the toRegister list, for future registration.
+     * @param {GatewayRoute} route
+     * @param {Array<Thing>} things
+     * @param {Array<string>} propertyIndexes
+     * @param {boolean} write
+     * @param {string} actionIndex
+     */
     public addOfferingForRoute(route: GatewayRoute, things: Array<Thing>, propertyIndexes?: Array<string>,
                                write?: boolean, actionIndex?: string) {
         // Reference thing: first of the array
@@ -84,6 +103,11 @@ export class OfferingManager {
         this.toRegister.push(offering);
     }
 
+    /**
+     * In case of direct compatibility between a Thing and the Offering model, add offerings based on the Thing. The
+     * Offerings are added to the toRegister list, for future registration.
+     * @param {Thing} thing
+     */
     public addOfferingsForThing(thing: Thing) {
         // Convert properties
         for (let i in thing.properties) {
@@ -130,6 +154,10 @@ export class OfferingManager {
         }
     }
 
+    /**
+     * Check the list of offerings to register and register them on the marketplace.
+     * @return {Promise<any>}
+     */
     public registerOfferings() {
         return new Promise((resolve, reject) => {
             let promises = [];
@@ -149,6 +177,10 @@ export class OfferingManager {
         });
     }
 
+    /**
+     * Unregister all offerings currently registered on the marketplace.
+     * @param callback
+     */
     public unregisterOfferings(callback) {
         let promises = [];
         for (let i = 0; i < this.registered.length; i++) {
@@ -164,14 +196,28 @@ export class OfferingManager {
         });
     }
 
+    /**
+     * Getter for toRegister.
+     * @return {Array<any>}
+     */
     public getOfferingsToRegister() {
         return this.toRegister;
     }
 
+    /**
+     * Getter for registered.
+     * @return {Array<any>}
+     */
     public getRegisteredOfferings() {
         return this.registered;
     }
 
+    /**
+     * In case of direct compatibility between an interaction and the offering mode, convert the input DataSchema to
+     * an offering input.
+     * @param schema
+     * @return {Array<any>}
+     */
     private static convertInputSchema(schema: any): Array<any> {
         let input = [];
         // Schema assumed to be compatible: no further checks
@@ -183,6 +229,12 @@ export class OfferingManager {
         return input;
     }
 
+    /**
+     * In case of direct compatibility between an interaction and the offering mode, convert the output DataSchema to
+     * an offering input.
+     * @param schema
+     * @return {Array<any>}
+     */
     private static convertOutputSchema(schema: any): Array<any> {
         let output = [];
         // Schema assumed to be compatible: no further checks
@@ -194,6 +246,11 @@ export class OfferingManager {
         return output;
     }
 
+    /**
+     * Get the Semantic annotation to use as rdfUri for the Offering.
+     * @param property
+     * @return {any}
+     */
     private static getPropertyRdfUri(property: any) {
         let type = property['@type'];
         if (type) {
@@ -208,6 +265,11 @@ export class OfferingManager {
             MetadataManager.DATA_TYPE_CONVERSION[property.type] : MetadataManager.DEFAULT_DATA_TYPE;
     }
 
+    /**
+     * Convert Interaction Forms to offering endpoints (readProperty verb).
+     * @param {Array<any>} forms
+     * @return {any}
+     */
     private static convertReadPropertyForm(forms: Array<any>): any {
         let form = null;
         if (forms.length === 1) {
@@ -235,6 +297,11 @@ export class OfferingManager {
         return null;
     }
 
+    /**
+     * Convert Interaction Forms to offering endpoints (writeProperty verb).
+     * @param {Array<any>} forms
+     * @return {any}
+     */
     private static convertWritePropertyForm(forms: Array<any>): any {
         let form = null;
         if (forms.length === 1) {
@@ -262,6 +329,11 @@ export class OfferingManager {
         return null;
     }
 
+    /**
+     * Convert Interaction Forms to offering endpoints (invokeAction verb).
+     * @param {Array<any>} forms
+     * @return {any}
+     */
     private static convertInvokeActionForm(forms: Array<any>): any {
         let form = null;
         if (forms.length === 1) {

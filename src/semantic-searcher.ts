@@ -1,10 +1,18 @@
 import https = require('https');
 import {Configuration} from "./configuration";
 
+/**
+ * Contains the relevant information to display the result of a search using the SemanticSearcher component.
+ */
 export class SearchResult {
     public readonly uri: string;
     public readonly description: string;
 
+    /**
+     * Constructor.
+     * @param {string} uri
+     * @param {string} desc
+     */
     constructor(uri: string, desc: string) {
         this.uri = uri;
         this.description = desc;

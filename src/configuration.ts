@@ -1,27 +1,60 @@
 import fs = require('fs');
 import path = require('path');
 
+/**
+ * Possible conversion modes when going from the Offering model to the Thing model.
+ */
 export enum OfferingToThing {
     OFFERING_TO_THING = 'OFFERING_TO_THING',
     PROVIDER_TO_THING = 'PROVIDER_TO_THING',
     MARKETPLACE_TO_THING = 'MARKETPLACE_TO_THING'
 }
 
+/**
+ * Configuration for the HistoryStore component.
+ */
 class HistoryConfig {
+    /**
+     * Period of time between each call to the Thing when using a HistoryStore.
+     */
     public period: number;
+    /**
+     * Maximum amount of stored outputs when using a HistoryStore which stores data in memory.
+     */
     public limit: number;
+    /**
+     * Store HistoryStore data on a file instead of memory?
+     */
     public onDisk: boolean;
 }
 
+/**
+ * Configuration for the Gateway server.
+ */
 class GatewayConfig {
+    /**
+     * Host address for the gateway server.
+     */
     public host: string;
+    /**
+     * Port to listen to for the gateway server.
+     */
     public port: number
 }
 
+/**
+ * Configuration used when aggregating Things.
+ */
 class AggregationConfig {
+    /**
+     * Allow consumer to filter output of aggregated Thing offerings?
+     */
     public usePropertyFilters: boolean;
 }
 
+/**
+ * Configuration used to connect to the Marketplace.
+ */
 class MarketConfig {
     public marketplaceUrlForProvider: string;
     public marketplaceUrlForConsumer: string;
@@ -31,20 +64,47 @@ class MarketConfig {
     public consumerSecret: string;
 }
 
+/**
+ * Configuration used by the SemanticSearcher component.
+ */
 class SearchConfig {
     public cseBase: string;
     public cseApiKey: string;
     public cseCx: string;
+    /**
+     * Maximum amount of semantic annotation suggestions sent to the user after calling the SemanticSearcher.
+     */
     public maxSuggestions: number;
 }
 
+/**
+ * General configuration for the whole application.
+ */
 export class Configuration {
 
+    /**
+     * Show additional logs?
+     */
     public moreLogs: boolean;
+    /**
+     * Merge properties when converting Things?
+     */
     public useMerge: boolean;
+    /**
+     * Aggregate identical Things when converting Things?
+     */
     public useAggregate: boolean;
+    /**
+     * Use HistoryStores for properties when converting Things?
+     */
     public useHistory: boolean;
+    /**
+     * Keep offerings alive on the marketplace after shutting down the application?
+     */
     public keepOfferings: boolean;
+    /**
+     * Offering to Thing conversion strategy.
+     */
     public offeringConversionStrategy: OfferingToThing;
 
     public history = new HistoryConfig();
@@ -53,8 +113,16 @@ export class Configuration {
     public market = new MarketConfig();
     public search = new SearchConfig();
 
-    constructor () {
+    /**
+     * Default constructor. Private to avoid having an uninitialized configuration.
+     */
+    private constructor() {
         //TODO: Is there anything to do?
+    }
+
+    public static getConfiguration(configSource: string): Promise<Configuration> {
+        let config = new Configuration();
+        return config.init(configSource);
     }
 
     /**
@@ -62,7 +130,7 @@ export class Configuration {
      * @param configSource
      * @return {Promise<any>}
      */
-    init(configSource) {
+    private init(configSource: string): Promise<Configuration> {
         return new Promise((resolve, reject) => {
             fs.readFile(path.resolve(__dirname, configSource), "utf-8", (err, data) => {
                 try {
@@ -103,7 +171,7 @@ export class Configuration {
 
                     //TODO: Other config
 
-                    resolve();
+                    resolve(this);
                 } catch (e) {
                     reject("Could not parse JSON config!");
                 }

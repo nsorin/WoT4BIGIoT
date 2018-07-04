@@ -5,23 +5,35 @@ import coap = require('coap');
 import urlParser = require('url');
 import {MetadataManager} from "./metadata-manager";
 
+/**
+ * Supported protocols.
+ */
 enum Protocol {
     HTTP = 'HTTP',
     COAP = 'COAP'
 }
 
+/**
+ * Supported methods for HTTP and COAP.
+ */
 export enum Method {
     GET = 'GET',
     POST = 'POST',
     PUT = 'PUT'
 }
 
+/**
+ * Interaction verbs (in the Thing model).
+ */
 export enum InteractionVerb {
     READ = 'readProperty',
     WRITE = 'writeProperty',
     INVOKE = 'invokeAction'
 }
 
+/**
+ * Used to make a request to the Thing and do the data conversion for input and output.
+ */
 class RequestToThing {
     private readonly sourceParams;
     private readonly sourceProtocol: Protocol;
@@ -30,6 +42,14 @@ class RequestToThing {
     private readonly sourceInputSchema: any;
     private readonly sourceOutputSchema: any;
 
+    /**
+     * Constructor. Prepares all the values needed to make the request later.
+     * @param {Form} form
+     * @param {InteractionVerb} verb
+     * @param sourceInputSchema
+     * @param sourceOutputSchema
+     * @param {string} sourceName
+     */
     constructor(form: WoT.Form, verb: InteractionVerb, sourceInputSchema: any, sourceOutputSchema: any, sourceName: string) {
         this.sourceInputSchema = sourceInputSchema;
         this.sourceOutputSchema = sourceOutputSchema;
@@ -95,12 +115,12 @@ class RequestToThing {
      * @return {Promise<any>}
      */
     public makeRequest(params: any): Promise<any> {
-        console.log('Original input:', params);
+        // console.log('Original input:', params);
         let input = RequestToThing.convertInputRecursive(this.sourceInputSchema, params, this.sourceName);
         if (input) {
             input = typeof input === 'object' ? JSON.stringify(input) : input;
         }
-        console.log('Converted input:', input);
+        // console.log('Converted input:', input);
         return new Promise((resolve, reject) => {
             if (this.sourceProtocol === Protocol.HTTP) {
                 switch (this.sourceMethod) {
@@ -115,7 +135,7 @@ class RequestToThing {
                                 } catch (e) {
                                     console.log('Warning: Body could not be parsed, returning raw output.');
                                 }
-                                console.log('HTTP Get returned', body);
+                                // console.log('HTTP Get returned', body);
                                 resolve(RequestToThing.convertOutputRecursive(this.sourceOutputSchema,
                                     body, this.sourceName));
                             }
@@ -176,6 +196,13 @@ class RequestToThing {
         });
     }
 
+    /**
+     * Convert input data (which is using the offering model) to the Thing's expected format.
+     * @param schema
+     * @param input
+     * @param name
+     * @return {any}
+     */
     private static convertInputRecursive(schema: any, input: any, name) {
         if (!schema || !input) {
             return undefined;
@@ -213,6 +240,13 @@ class RequestToThing {
         return newInput;
     }
 
+    /**
+     * Convert output data (which is using the Thing's model) to the Offering's format.
+     * @param schema
+     * @param output
+     * @param name
+     * @return {{}}
+     */
     private static convertOutputRecursive(schema: any, output: any, name) {
         if (!schema || (!output && output !== 0)) {
             return {};
@@ -233,11 +267,14 @@ class RequestToThing {
         } else {
             returnValue[name] = output;
         }
-        console.log('Conversion output is', returnValue);
+        // console.log('Conversion output is', returnValue);
         return returnValue;
     }
 }
 
+/**
+ * GatewayRoute which contains everything needed to be added to the Gateway and registered as an offering.
+ */
 export class GatewayRoute {
 
     /**
@@ -404,9 +441,9 @@ export class GatewayRoute {
                 this.convertedInputSchema.push(GatewayRoute.ID_FIELD);
             }
         }
-        console.log('Converted input schema is', this.convertedInputSchema);
-        console.log('Filter input schema is', this.propertyFiltersSchema);
-        console.log('Converted output schema is', this.convertedOutputSchema);
+        // console.log('Converted input schema is', this.convertedInputSchema);
+        // console.log('Filter input schema is', this.propertyFiltersSchema);
+        // console.log('Converted output schema is', this.convertedOutputSchema);
         // console.log('Created GatewayRoute:', this);
     }
 
@@ -418,7 +455,7 @@ export class GatewayRoute {
      * @return {Promise<any>}
      */
     public access(params: any, id?: number, propertyFilters?: any): Promise<any> {
-        console.log('Accessing GatewayRoute', this.uri);
+        // console.log('Accessing GatewayRoute', this.uri);
         return new Promise((resolve, reject) => {
             if (!this.valid) {
                 reject('Route is invalid, cannot be used.');
@@ -463,7 +500,7 @@ export class GatewayRoute {
                     // Once all requests have a response, unwrap the output and resolve it
                     let finalArray = [];
                     Promise.all(finalPromises).then((outputValues) => {
-                        console.log('All promises resolved with output:', outputValues);
+                        // console.log('All promises resolved with output:', outputValues);
                         // First layer: each value contains the values for one thing.
                         for (let i = 0; i < outputValues.length; i++) {
                             let finalObject: any = {};
@@ -477,13 +514,13 @@ export class GatewayRoute {
                                 finalObject.id = i;
                             }
 
-                            console.log("FILTERS RECEIVED:", propertyFilters);
+                            // console.log("FILTERS RECEIVED:", propertyFilters);
                             // Evaluate filters
                             if (!propertyFilters || this.outputMeetsRequirements(finalObject, propertyFilters)) {
                                 finalArray.push(finalObject);
                             }
                         }
-                        console.log('Final array is', finalArray);
+                        // console.log('Final array is', finalArray);
                         resolve(finalArray);
                     });
                 }
@@ -491,6 +528,12 @@ export class GatewayRoute {
         });
     }
 
+    /**
+     * Check if returned values match the filters received as input.
+     * @param output
+     * @param filters
+     * @return {boolean}
+     */
     private outputMeetsRequirements(output, filters): boolean {
         for (let i in filters) {
             if (filters.hasOwnProperty(i)) {
@@ -506,6 +549,12 @@ export class GatewayRoute {
         return true;
     }
 
+    /**
+     * Get the form relevant to the Interaction Verb provided as parameter.
+     * @param {Array<WoT.Form>} forms
+     * @param {InteractionVerb} verb
+     * @return {WoT.Form}
+     */
     private getRelevantForm(forms: Array<WoT.Form>, verb: InteractionVerb): WoT.Form {
         if (forms.length === 1) {
             return forms[0];
@@ -524,6 +573,13 @@ export class GatewayRoute {
         return form;
     }
 
+    /**
+     * Convert a schema from the Thing model to the Offering format. For properties only.
+     * @param property
+     * @param {string} name
+     * @param context
+     * @return {any[]}
+     */
     private convertSchemaRecursive(property: any, name: string, context: any) {
         if (!property) {
             return [];
@@ -566,37 +622,12 @@ export class GatewayRoute {
         return newSchema;
     }
 
-    private convertInput(input: any) {
-        console.log('Received input is:', input);
-        // TODO Handle underscore in original name
-        let result = {};
-        for (let key in input) {
-            if (input.hasOwnProperty(key) && this.fieldExistsInConvertedSchema(key, true)) {
-                let levels = key.split(GatewayRoute.LEVEL_SEPARATOR);
-                for (let i = 0; i < levels.length; i++) {
-                    let currentLevel = result;
-                    if (i === levels.length - 1) {
-                        currentLevel[levels[i]] = input[key];
-                    } else if (result.hasOwnProperty(levels[i])) {
-                        currentLevel = currentLevel[levels[i]];
-                    } else {
-                        currentLevel[levels[i]] = {};
-                        currentLevel = currentLevel[levels[i]];
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    private fieldExistsInConvertedSchema(fieldName: string, input: boolean): boolean {
-        let schema = input ? this.convertedInputSchema : this.convertedOutputSchema;
-        for (let i = 0; i < schema.length; i++) {
-            if (schema[i].name === fieldName) return true;
-        }
-        return false;
-    }
-
+    /**
+     * Replace the prefix of a thing @type entry.
+     * @param prefixed
+     * @param context
+     * @return {any}
+     */
     private static replacePrefix(prefixed, context) {
         if (/^.+:[^, \\/]+.$/.test(prefixed)) {
             let prefix = prefixed.match(new RegExp('^[^, :\\/]+:'))[0];

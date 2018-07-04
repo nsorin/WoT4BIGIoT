@@ -4,6 +4,9 @@ import {Thing, EventFragment, PropertyFragment, ActionFragment, Form} from "../t
 import sanitize = require('sanitize-filename');
 import {MetadataManager} from "./metadata-manager";
 
+/**
+ * Class used to convert Offerings to Things.
+ */
 export class OfferingConverter {
 
     private static readonly PROVIDER_URI = "provider/";
@@ -15,12 +18,20 @@ export class OfferingConverter {
     private readonly consumer: any;
     private initDone: boolean = false;
 
+    /**
+     * Constructor. Init needs to be called.
+     * @param {Configuration} config
+     */
     constructor(config: Configuration) {
         this.config = config;
         this.consumer = new bigiot.consumer(this.config.market.consumerId,
             this.config.market.consumerSecret, this.config.market.marketplaceUrlForConsumer);
     }
 
+    /**
+     * Init method: authenticate the consumer if not done already.
+     * @return {Promise<any>}
+     */
     public init(): Promise<any> {
         return new Promise((resolve, reject) => {
             if (this.initDone) {
@@ -36,10 +47,15 @@ export class OfferingConverter {
         });
     }
 
+    /**
+     * Convert one Offering using its id as input. Produces one Thing for one Offering as output.
+     * @param {string} offeringId
+     * @return {Promise<any>}
+     */
     public convertOne(offeringId: string): Promise<any> {
         return new Promise((resolve, reject) => {
+            // Get the offering from the marketplace
             this.consumer.get(offeringId).then((data) => {
-                console.log(data);
                 let offering = data.offering;
                 let thing = new Thing();
                 thing[OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.OFFERING_TYPE];
@@ -60,6 +76,11 @@ export class OfferingConverter {
         });
     }
 
+    /**
+     * Convert multiple Offerings at once. Produces only one Thing for all offerings.
+     * @param {Array<string>} offeringIds
+     * @return {Promise<any>}
+     */
     public convertMultiple(offeringIds: Array<string>): Promise<any> {
         return new Promise((resolve, reject) => {
             let promises: Array<Promise<any>> = [];
@@ -85,6 +106,11 @@ export class OfferingConverter {
         });
     }
 
+    /**
+     * Convert multiple Offerings at once. Produces one Thing for each identified provider in the offerings.
+     * @param {Array<string>} offeringIds
+     * @return {Promise<any>}
+     */
     public convertMultipleByProvider(offeringIds: Array<string>): Promise<any> {
         return new Promise((resolve, reject) => {
             let promises: Array<Promise<any>> = [];
@@ -121,6 +147,12 @@ export class OfferingConverter {
         });
     }
 
+    /**
+     * Generates and appends an interaction to a Thing based on an offering.
+     * @param offering
+     * @param {Thing} thing
+     * @return {any}
+     */
     private generateInteraction(offering: any, thing: Thing): any {
         let endpoint = offering.endpoints.length > 0 ? offering.endpoints[0] : null;
         if (!endpoint) {
@@ -177,6 +209,11 @@ export class OfferingConverter {
         }
     }
 
+    /**
+     * Adds the marketplace metadata to the thing, using full URIs.
+     * @param obj
+     * @param offering
+     */
     private static addBigIotMetadata(obj: any, offering) {
         obj[MetadataManager.PRICE] = {
             [MetadataManager.PRICING_MODEL]: offering.price.pricingModel,
@@ -202,6 +239,11 @@ export class OfferingConverter {
         };
     }
 
+    /**
+     * Convert the Offering input schema to a Thing DataSchema.
+     * @param {Array<any>} input
+     * @return {any}
+     */
     private static convertInputSchemaSimple(input: Array<any>): any {
         let schema = {
             type: 'object',
@@ -216,6 +258,11 @@ export class OfferingConverter {
         return schema;
     }
 
+    /**
+     * Convert the Offering output schema to a Thing DataSchema.
+     * @param {Array<any>} output
+     * @return {any}
+     */
     private static convertOutputSchemaSimple(output: Array<any>): any {
         let schema = {
             type: 'array',
@@ -233,6 +280,11 @@ export class OfferingConverter {
         return schema;
     }
 
+    /**
+     * Convert the list of endpoints for an offering to a list of forms for an interaction.
+     * @param {Array<any>} endpoints
+     * @return {Array<Form>}
+     */
     private static convertEndpointsToForm(endpoints: Array<any>): Array<Form> {
         let forms: Array<Form> = [];
         for (let i = 0; i < endpoints.length; i++) {

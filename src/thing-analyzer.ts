@@ -1,10 +1,17 @@
 import {Thing} from "../thingweb.node-wot/packages/td-tools";
 import {Configuration} from "./configuration";
 
+/**
+ * Used to analyze and reformat TDs in various ways before using them in the application.
+ */
 export class ThingAnalyzer {
 
     private config: Configuration;
 
+    /**
+     * Constructor.
+     * @param {Configuration} config Must be initialized!
+     */
     constructor(config: Configuration) {
         this.config = config;
     }
@@ -172,7 +179,7 @@ export class ThingAnalyzer {
 
     /**
      * Check if a Property is compatible with the Offering model.
-     * @param {ThingProperty} property
+     * @param {any} property
      * @return {boolean}
      */
     private isPropertyDirectlyCompatible(property: any): boolean {
@@ -191,7 +198,7 @@ export class ThingAnalyzer {
 
     /**
      * Check if an Action is compatible with the Offering model.
-     * @param {ThingAction} action
+     * @param {any} action
      * @return {boolean}
      */
     private isActionDirectlyCompatible(action: any): boolean {
@@ -221,7 +228,7 @@ export class ThingAnalyzer {
 
     /**
      * Check if an output schema is compatible with the Offering model.
-     * @param {DataSchema} schema
+     * @param schema
      * @return {boolean}
      */
     private isOutputSchemaCompatible(schema: WoT.DataSchema): boolean {
@@ -241,7 +248,7 @@ export class ThingAnalyzer {
 
     /**
      * Check if an input schema is compatible with the Offering model.
-     * @param {DataSchema} schema
+     * @param schema
      * @return {boolean}
      */
     private isInputSchemaCompatible(schema: any): boolean {

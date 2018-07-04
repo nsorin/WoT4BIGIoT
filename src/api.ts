@@ -10,7 +10,7 @@ export class Api {
 
     private static CONFIG_SOURCE = "../config.json";
 
-    private config = new Configuration();
+    private config: Configuration;
     private thingAnalyzer: ThingAnalyzer;
     private offeringManager: OfferingManager;
     private gateway: Gateway;
@@ -19,12 +19,15 @@ export class Api {
 
     private initComplete = false;
 
+    /**
+     * Default constructor. Private to avoid having a uninitialized api.
+     */
     private constructor() {
         // Nothing to do, call init
     }
 
     /**
-     * Static method to call to init the API
+     * Static method to call to init the API.
      * @return {Promise<any>}
      */
     public static getApi(): Promise<any> {
@@ -36,9 +39,10 @@ export class Api {
      * Initialize the API. Must be called before using the API methods.
      * @return {Promise<any>}
      */
-    public init(): Promise<any> {
+    private init(): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.config.init(Api.CONFIG_SOURCE).then(() => {
+            Configuration.getConfiguration(Api.CONFIG_SOURCE).then((config) => {
+                this.config = config;
                 this.thingAnalyzer = new ThingAnalyzer(this.config);
                 this.semanticSearcher = new SemanticSearcher(this.config);
                 this.offeringConverter = new OfferingConverter(this.config);
@@ -164,7 +168,7 @@ export class Api {
             if (!this.initComplete) {
                 reject('Configuration not initialized!');
             } else {
-                switch(this.config.offeringConversionStrategy) {
+                switch (this.config.offeringConversionStrategy) {
                     case OfferingToThing.OFFERING_TO_THING:
                         let promises: Array<Promise<any>> = [];
                         for (let i = 0; i < offeringIds.length; i++) {
@@ -240,7 +244,6 @@ export class Api {
     private convertThingsWithGateway(things: Array<Thing>): void {
         this.gateway.init().then((gateway) => {
             if (this.config.useAggregate) {
-
                 // Identify identical things
                 let identicalThings: Array<Array<Thing>> = [];
                 for (let i = 0; i < things.length; i++) {
@@ -258,7 +261,6 @@ export class Api {
                 // Register things by type
                 let alreadyUsedNames: Array<string> = [];
                 for (let i = 0; i < identicalThings.length; i++) {
-
                     // Rename duplicates
                     let fakeIndex = 0;
                     while (alreadyUsedNames.indexOf(identicalThings[i][0].name) > -1) {
@@ -270,7 +272,8 @@ export class Api {
                         }
                     }
                     alreadyUsedNames.push(identicalThings[i][0].name);
-
+                    // Once the name is unique, add to the gateway.
+                    // TODO: Check names across calls (store the already used name)
                     this.gateway.addAggregatedThings(identicalThings[i]);
                 }
             } else {

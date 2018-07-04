@@ -5,6 +5,11 @@ import {Thing} from "../thingweb.node-wot/packages/td-tools";
 import {HistoryStore} from "./history-store";
 import {OfferingManager} from "./offering-manager";
 
+
+/**
+ * Gateway server used to perform operations on input/output between the Thing and the Marketplace consumers. Contains
+ * GatewayRoutes and HistoryStores which will be registered to the Marketplace.
+ */
 export class Gateway {
 
     private readonly config: Configuration;
@@ -14,13 +19,19 @@ export class Gateway {
     private historyStores: Array<HistoryStore> = [];
     private initComplete = false;
 
+    /**
+     * Constructor.
+     * @param {Configuration} config
+     * @param {OfferingManager} offeringManager
+     */
     constructor(config: Configuration, offeringManager: OfferingManager) {
         this.config = config;
         this.offeringManager = offeringManager;
     }
 
     /**
-     * Initialize the Gateway. If init as already been performed, skip it.
+     * Initialize the Gateway. If init as already been performed, skip it. Should only be done if the Gateway is about
+     * to be used, to avoid running a server unnecessarily.
      * @return {Promise<any>}
      */
     public init(): Promise<any> {
@@ -41,6 +52,10 @@ export class Gateway {
         });
     }
 
+    /**
+     * Add GatewayRoutes for a set of Things, one Thing at a time.
+     * @param {Array<Thing>} things
+     */
     public addSingleThings(things: Array<Thing>) {
         console.log('Received', things.length, 'to add without aggregation');
         let alreadyUsedNames: Array<string> = [];
@@ -102,8 +117,12 @@ export class Gateway {
         this.syncRoutes();
     }
 
+    /**
+     * Add GatewayRoutes for a set of identical Things.
+     * @param {Array<Thing>} things
+     */
     public addAggregatedThings(things: Array<Thing>) {
-        console.log('Received', things.length, 'to add with aggregation');
+        // console.log('Received', things.length, 'to add with aggregation');
         if (things.length > 0) {
             // All things are identical - use first one as reference:
             let thing = things[0];
@@ -156,6 +175,9 @@ export class Gateway {
         }
     }
 
+    /**
+     * Check every GatewayRoute in the routes attribute and create an endpoint for those which do not have one yet.
+     */
     private syncRoutes() {
         console.log('Syncing routes');
         for (let i = 0; i < this.routes.length; i++) {
@@ -208,12 +230,14 @@ export class Gateway {
                         });
                     });
                 }
-                // TODO Register offering
                 this.routes[i].registered = true;
             }
         }
     }
 
+    /**
+     * Check every HistoryStore in the stores attribute and create an endpoint for those which do not have one yet.
+     */
     private syncHistoryStores() {
         for (let i = 0; i < this.historyStores.length; i++) {
             let sourceRoute = this.historyStores[i].source;
@@ -242,7 +266,6 @@ export class Gateway {
                         });
                     });
                 }
-                // TODO Register offering
                 sourceRoute.registered = true;
             }
         }

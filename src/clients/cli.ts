@@ -18,11 +18,20 @@ const CONVERT_OFFERINGS = 'convert_offerings';
 
 const THING_SAVE_PATH = '../../output/';
 
+/**
+ * Class used for CLI commands.
+ */
 class Command {
     private readonly name: string;
     private readonly args: string;
     private readonly toExecute: any;
 
+    /**
+     * Constructor.
+     * @param name
+     * @param args
+     * @param toExecute
+     */
     constructor(name, args, toExecute) {
         this.name = name;
         this.args = args;
@@ -37,6 +46,12 @@ class Command {
         return this.args;
     }
 
+    /**
+     * Call the function associated with the command.
+     * @param api
+     * @param {string} args
+     * @return {any}
+     */
     public call(api, args: string) {
         return this.toExecute(api, args.split(' '));
     }
@@ -71,6 +86,11 @@ Api.getApi().then((api) => {
     waitForCommand(api, rl);
 });
 
+/**
+ * Wait for user input when a command is expected.
+ * @param {Api} api
+ * @param rl
+ */
 function waitForCommand(api: Api, rl: any) {
     rl.question('Enter a command here: \n', (answer) => {
         answer = answer.replace(/(\r\n\t|\n|\r\t)$/, '');
@@ -94,6 +114,12 @@ function waitForCommand(api: Api, rl: any) {
 }
 
 // --- CORE COMMANDS
+/**
+ * Convert Things based on their URI.
+ * @param {Api} api
+ * @param {Array<string>} uri
+ * @return {Promise<any>}
+ */
 function convertThings(api: Api, uri: Array<string>): Promise<any> {
     return new Promise((resolve, reject) => {
         let promises = [];
@@ -138,6 +164,12 @@ function convertThings(api: Api, uri: Array<string>): Promise<any> {
     });
 }
 
+/**
+ * Convert Offerings based on their ids.
+ * @param {Api} api
+ * @param {Array<string>} offeringIds
+ * @return {Promise<any>}
+ */
 function convertOfferings(api: Api, offeringIds: Array<string>): Promise<any> {
     return api.convertOfferings(offeringIds).then((things) => {
         saveThings(things);
@@ -145,12 +177,23 @@ function convertOfferings(api: Api, offeringIds: Array<string>): Promise<any> {
     });
 }
 
+/**
+ * Register offerings already added when converting things, based on their ids.
+ * @param {Api} api
+ * @param {Array<string>} uris
+ * @return {Promise<any>}
+ */
 function registerOfferings(api: Api, uris: Array<string>) {
     return new Promise((resolve, reject) => {
         resolve();
     });
 }
 
+/**
+ * Register all offerings already added when converting things.
+ * @param {Api} api
+ * @return {Promise<any>}
+ */
 function registerAllOfferings(api: Api) {
     return new Promise((resolve, reject) => {
         let list = api.getOfferingsToRegister();
@@ -163,10 +206,19 @@ function registerAllOfferings(api: Api) {
     });
 }
 
+/**
+ * Delete all registered offerings.
+ * @param {Api} api
+ */
 function deleteAllOfferings(api: Api) {
     api.deleteAllOfferings();
 }
 
+/**
+ * Show the list of offerings waiting for registration on the marketplace.
+ * @param {Api} api
+ * @return {Promise<any>}
+ */
 function showOfferingsToRegister(api: Api): Promise<any> {
     return new Promise((resolve, reject) => {
         let list = api.getOfferingsToRegister();
@@ -177,6 +229,11 @@ function showOfferingsToRegister(api: Api): Promise<any> {
     });
 }
 
+/**
+ * Show the list of offerings already registered on the marketplace.
+ * @param {Api} api
+ * @return {Promise<any>}
+ */
 function showRegisteredOfferings(api: Api): Promise<any> {
     return new Promise((resolve, reject) => {
         let list = api.getRegisteredOfferings();
@@ -190,6 +247,14 @@ function showRegisteredOfferings(api: Api): Promise<any> {
 
 // --- TOOLS
 
+/**
+ * Edit an offering which is waiting for registration. Allows user to input metadata.
+ * @param {Api} api
+ * @param rl
+ * @param {Array<any>} offeringList
+ * @param index
+ * @return {Promise<any>}
+ */
 function editOffering(api: Api, rl: any, offeringList: Array<any>, index) {
     return new Promise((resolve, reject) => {
         if (index < offeringList.length) {
@@ -214,6 +279,12 @@ function editOffering(api: Api, rl: any, offeringList: Array<any>, index) {
     });
 }
 
+/**
+ * Ask user to enter a category for an offering.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askCategory(rl: any, offering: any, callback: any) {
     rl.question('Category for ' + offering.name + '? (Suggested: ' + offering.rdfUri + ')',
         (answer) => {
@@ -227,6 +298,12 @@ function askCategory(rl: any, offering: any, callback: any) {
         });
 }
 
+/**
+ * Ask user to enter a license for an offering.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askLicense(rl: any, offering: any, callback: any) {
     rl.question('License for ' + offering.name + '? (Suggested: ' + offering.license + ') '
         + MetadataManager.getFormattedArray(MetadataManager.LICENSES) + '\n', (answer) => {
@@ -244,6 +321,12 @@ function askLicense(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter a spatial extent for an offering. Starts with the city.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askSpatialExtent(rl: any, offering: any, callback: any) {
     rl.question('City for ' + offering.name + '? (Suggested: ' + offering.extent.city + ')\n', (answer) => {
         answer = answer.replace(/(\r\n\t|\n|\r\t)/, '');
@@ -274,6 +357,12 @@ function askSpatialExtent(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter a price for an offering. Starts with the pricing model.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askPrice(rl: any, offering: any, callback: any) {
     rl.question('Pricing model for ' + offering.name + '? (Suggested: ' +
         offering.price.pricingModel + ') '
@@ -306,6 +395,12 @@ function askPrice(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter a first latitude of a boundary.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askL1Latitude(rl: any, offering: any, callback: any) {
     rl.question('Boundary for ' + offering.name + ': first corner latitude? (Suggested: '
         + offering.extent.boundary.l1.lat + ')\n', (answer) => {
@@ -321,6 +416,12 @@ function askL1Latitude(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter a first longitude of a boundary.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askL1Longitude(rl: any, offering: any, callback: any) {
     rl.question('Boundary for ' + offering.name + ': first corner longitude? (Suggested: '
         + offering.extent.boundary.l1.lng + ')\n', (answer) => {
@@ -336,6 +437,12 @@ function askL1Longitude(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter a second latitude of a boundary.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askL2Latitude(rl: any, offering: any, callback: any) {
     rl.question('Boundary for ' + offering.name + ': second corner latitude? (Suggested: '
         + offering.extent.boundary.l2.lat + ')\n', (answer) => {
@@ -351,6 +458,12 @@ function askL2Latitude(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter a second longitude of a boundary.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askL2Longitude(rl: any, offering: any, callback: any) {
     rl.question('Boundary for ' + offering.name + ': second corner longitude? (Suggested: '
         + offering.extent.boundary.l2.lng + ')\n', (answer) => {
@@ -366,6 +479,12 @@ function askL2Longitude(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter the currency of a price.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askCurrency(rl: any, offering: any, callback: any) {
     rl.question('Currency for ' + offering.name + '? (Suggested: '
         + offering.price.money.currency + ') ' + MetadataManager.getFormattedArray(MetadataManager.CURRENCIES) + '\n', (answer) => {
@@ -382,6 +501,12 @@ function askCurrency(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter the amount of money of a price.
+ * @param rl
+ * @param offering
+ * @param callback
+ */
 function askAmount(rl: any, offering: any, callback: any) {
     rl.question('Amount of money for ' + offering.name + '? (Suggested: '
         + offering.price.money.amount + ')\n', (answer) => {
@@ -397,6 +522,15 @@ function askAmount(rl: any, offering: any, callback: any) {
     });
 }
 
+/**
+ * Ask user to enter the semantic annotation for an input/output field, while showing suggestions found with the
+ * SemanticSearcher.
+ * @param {Api} api
+ * @param rl
+ * @param {Array<any>} fieldList
+ * @param {number} index
+ * @param callback
+ */
 function askSemanticType(api: Api, rl: any, fieldList: Array<any>, index: number, callback) {
     if (!fieldList || index >= fieldList.length) {
         // If no field left, use callback
@@ -427,6 +561,10 @@ function askSemanticType(api: Api, rl: any, fieldList: Array<any>, index: number
     }
 }
 
+/**
+ * Save JSON TDs to files on the disk.
+ * @param {Array<Thing>} things
+ */
 function saveThings(things: Array<Thing>) {
     for (let i = 0; i < things.length; i++) {
         fs.writeFileSync(path.resolve(__dirname, THING_SAVE_PATH + things[i].name + '.json'), serializeTD(things[i]));

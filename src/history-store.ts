@@ -5,6 +5,9 @@ import fs = require('fs');
 import path = require('path');
 import readline = require('readline');
 
+/**
+ * Used to store values over time instead of returning live data from a GatewayRoute.
+ */
 export class HistoryStore {
 
     private config: Configuration;
@@ -21,6 +24,11 @@ export class HistoryStore {
     private static readonly END_FIELD = {name: "endTime", rdfUri: "http://schema.big-iot.org/mobility/endTime"};
     private static readonly DATE_FIELD = {name: HistoryStore.DATE_FIELD_NAME, rdfUri: "http://schema.big-iot.org/common/measurementTime"};
 
+    /**
+     * Constructor. Create a new store based on a GatewayRoute.
+     * @param {Configuration} config
+     * @param {GatewayRoute} source
+     */
     constructor(config: Configuration, source: GatewayRoute) {
         this.config = config;
         this.source = source;
@@ -44,10 +52,22 @@ export class HistoryStore {
         }
     }
 
+    /**
+     * Read the currently stored values, with optional temporal filters.
+     * @param startTime
+     * @param endTime
+     * @return {Promise<any>}
+     */
     public readStore(startTime?, endTime?): Promise<any> {
         return this.config.history.onDisk ? this.readOnDisk(startTime, endTime) : this.read(startTime, endTime);
     }
 
+    /**
+     * Read a store in memory.
+     * @param startTime
+     * @param endTime
+     * @return {Promise<any>}
+     */
     private read(startTime?, endTime?) {
         return new Promise((resolve, reject) => {
             // Deep copy of the array to keep the state at the time the function is called
@@ -81,6 +101,12 @@ export class HistoryStore {
         });
     }
 
+    /**
+     * Read a store in a file.
+     * @param startTime
+     * @param endTime
+     * @return {Promise<any>}
+     */
     private readOnDisk(startTime?, endTime?) {
         return new Promise((resolve, reject) => {
             let reader = readline.createInterface({input: fs.createReadStream(this.fileStream.path)});
@@ -100,6 +126,10 @@ export class HistoryStore {
         });
     }
 
+    /**
+     * Call the Gateway route to get new data.
+     * @param callback
+     */
     private callSource(callback) {
         let newObject = {[HistoryStore.DATE_FIELD_NAME]: dateTime.create().format('Y-m-dTH:M:S')};
         this.source.access({}).then((data) => {
@@ -112,6 +142,10 @@ export class HistoryStore {
         });
     }
 
+    /**
+     * Write new data on the store (in memory).
+     * @param newObject
+     */
     private writeStore(newObject) {
         this.memoryStore.push(newObject);
         if (this.memoryStore.length > this.config.history.limit) {
@@ -119,6 +153,10 @@ export class HistoryStore {
         }
     }
 
+    /**
+     * Write new data on the store (in a file).
+     * @param newObject
+     */
     private writeStoreOnDisk(newObject) {
         this.fileStream.write(JSON.stringify(newObject) + '\n');
     }
