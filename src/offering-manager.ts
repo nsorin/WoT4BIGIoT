@@ -113,7 +113,7 @@ export class OfferingManager {
         for (let i in thing.properties) {
             if (thing.properties.hasOwnProperty(i)) {
                 let property = thing.properties[i];
-                let offering = new bigiot.offering(sanitize(thing.name + '-Read-' + i),
+                let offering = new bigiot.offering(sanitize(thing.name + (property.writable ? '-Read-' : '-') + i),
                     MetadataManager.guessCategory(thing, property));
                 offering.license = MetadataManager.guessLicense(thing, property);
                 offering.price = MetadataManager.guessPrice(thing, property);
@@ -144,8 +144,8 @@ export class OfferingManager {
                 let offering = new bigiot.offering(sanitize(thing.name + '-' + i),
                     MetadataManager.guessCategory(thing, action));
                 offering.license = MetadataManager.guessLicense(thing, action);
-                offering.price = MetadataManager.guessLicense(thing, action);
-                offering.spatialExtent = MetadataManager.guessLicense(thing, action);
+                offering.price = MetadataManager.guessPrice(thing, action);
+                offering.extent = MetadataManager.guessSpatialExtent(thing, action);
                 offering.inputData = OfferingManager.convertInputSchema(action.input);
                 offering.outputData = OfferingManager.convertOutputSchema(action.output);
                 offering.endpoints = OfferingManager.convertInvokeActionForm(action.forms);
@@ -167,7 +167,7 @@ export class OfferingManager {
                     this.registered.push(this.toRegister[i]);
                 }, (err) => {
                     console.log("Failed to register offering " + this.toRegister[i].name);
-                    console.log(err);
+                    // console.log(err);
                 }));
             }
             Promise.all(promises).then(() => {
@@ -210,6 +210,14 @@ export class OfferingManager {
      */
     public getRegisteredOfferings() {
         return this.registered;
+    }
+
+    /**
+     * Get the current provider's id.
+     * @return {string}
+     */
+    public getProviderId(): string {
+        return this.provider.id;
     }
 
     /**

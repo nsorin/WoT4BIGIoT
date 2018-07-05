@@ -226,8 +226,8 @@ export class MetadataManager {
                 price = MetadataManager.isPriceValid(thing.properties[i][MetadataManager.PRICE]) ?
                     MetadataManager.sumPrices(price, MetadataManager.copyPrice(thing.properties[i][MetadataManager.PRICE]))
                     : price;
-                // If a null price is returned, there was an incompatibility
-                if (price === null) {
+                // If an undefined price is returned, there was an incompatibility
+                if (!price) {
                     break;
                 }
                 count++;
@@ -299,7 +299,7 @@ export class MetadataManager {
      * @return {any} SpatialExtent in the bigiot-js api format (no full URIs)
      */
     public static guessMergedSpatialExtent(thing: Thing): any {
-        let boundary: any = null;
+        let boundary: any = undefined;
         let city: string = '';
         let cityOk = true;
         let firstSet: boolean = false;
@@ -364,7 +364,7 @@ export class MetadataManager {
      * @return {any} SpatialExtent in the bigiot-js api format (no full URIs)
      */
     public static guessAggregatedSpatialExtent(things: Array<Thing>, propertyIndexes: Array<string>, actionIndex?: string): any {
-        let boundary: any = null;
+        let boundary: any = undefined;
         let city: string = '';
         let cityOk = true;
         let firstSet: boolean = false;
@@ -454,8 +454,8 @@ export class MetadataManager {
         let count = 0;
         for (let i = 0; i < prices.length; i++) {
             price = prices[i] ? MetadataManager.sumPrices(price, prices[i]) : price;
-            // If a null price is returned, there was an incompatibility
-            if (price === null) {
+            // If an undefined price is returned, there was an incompatibility
+            if (!price) {
                 break;
             }
             count++;
@@ -485,9 +485,9 @@ export class MetadataManager {
         if (p2.pricingModel === MetadataManager.FREE) {
             return p1;
         }
-        // If there is an incompatibility, return null (error)
+        // If there is an incompatibility, return undefined (error)
         if (p1.pricingModel !== p2.pricingModel) {
-            return null;
+            return undefined;
         }
         // Sum compatible prices
         return {
@@ -511,7 +511,7 @@ export class MetadataManager {
             money: tdPrice[MetadataManager.MONEY] ? {
                 amount: tdPrice[MetadataManager.MONEY][MetadataManager.AMOUNT],
                 currency: tdPrice[MetadataManager.MONEY][MetadataManager.CURRENCY]
-            } : null
+            } : undefined
         };
     }
 
@@ -527,12 +527,12 @@ export class MetadataManager {
                 l1: tdExtent[MetadataManager.BOUNDARY][MetadataManager.LAT_LONG_1] ? {
                     lat: tdExtent[MetadataManager.BOUNDARY][MetadataManager.LAT_LONG_1][MetadataManager.B_LATITUDE],
                     lng: tdExtent[MetadataManager.BOUNDARY][MetadataManager.LAT_LONG_1][MetadataManager.B_LONGITUDE],
-                } : null,
+                } : undefined,
                 l2: tdExtent[MetadataManager.BOUNDARY][MetadataManager.LAT_LONG_2] ? {
                     lat: tdExtent[MetadataManager.BOUNDARY][MetadataManager.LAT_LONG_2][MetadataManager.B_LATITUDE],
                     lng: tdExtent[MetadataManager.BOUNDARY][MetadataManager.LAT_LONG_2][MetadataManager.B_LONGITUDE],
-                } : null
-            } : null
+                } : undefined
+            } : undefined
         };
     }
 
@@ -565,7 +565,7 @@ export class MetadataManager {
             }
         }
         // TODO: Support other formats
-        return null;
+        return undefined;
     }
 
     // --- Public validity checkers

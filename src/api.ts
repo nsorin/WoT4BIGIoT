@@ -36,18 +36,18 @@ export class Api {
      * Static method to call to init the API.
      * @return {Promise<any>}
      */
-    public static getApi(): Promise<any> {
+    public static getApi(configSource?: string): Promise<any> {
         let api = new Api();
-        return api.init();
+        return api.init(configSource);
     }
 
     /**
      * Initialize the API. Must be called before using the API methods.
      * @return {Promise<any>}
      */
-    private init(): Promise<any> {
+    private init(configSource?: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            Configuration.getConfiguration(Api.CONFIG_SOURCE).then((config) => {
+            Configuration.getConfiguration(configSource ? configSource : Api.CONFIG_SOURCE).then((config) => {
                 this.config = config;
                 this.thingAnalyzer = new ThingAnalyzer(this.config);
                 this.semanticSearcher = new SemanticSearcher(this.config);
@@ -218,6 +218,22 @@ export class Api {
      */
     public getSemanticTypeSuggestions(name: string): Promise<Array<SearchResult>> {
         return this.semanticSearcher.makePropertySearch(name);
+    }
+
+    /**
+     * Get the current provider's id.
+     * @return {string}
+     */
+    public getProviderId(): string {
+        return this.offeringManager.getProviderId();
+    }
+
+    /**
+     * Get the current consumer.
+     * @return {string}
+     */
+    public getConsumer(): string {
+        return this.offeringConverter.getConsumer();
     }
 
     /**

@@ -26,7 +26,7 @@ export class ThingAnalyzer {
         // Check properties
         for (let i in thing.properties) {
             if (thing.properties.hasOwnProperty(i)) {
-                if (!this.isPropertyDirectlyCompatible(thing.properties[i])) {
+                if (!this.isPropertyDirectlyCompatible(thing.properties[i], i)) {
                     return false;
                 }
             }
@@ -34,7 +34,7 @@ export class ThingAnalyzer {
         // Check actions
         for (let i in thing.actions) {
             if (thing.actions.hasOwnProperty(i)) {
-                if (!this.isActionDirectlyCompatible(thing.actions[i])) {
+                if (!this.isActionDirectlyCompatible(thing.actions[i], i)) {
                     return false;
                 }
             }
@@ -68,7 +68,7 @@ export class ThingAnalyzer {
      */
     public resolveContexts(jsonLD: any, prefixes: any): any {
         // If there are no prefixes, no need to go any further
-        if (typeof prefixes !== "object" || Object.keys(prefixes).length === 0) return;
+        if (typeof prefixes !== "object" || Object.keys(prefixes).length === 0) return jsonLD;
 
         if (typeof jsonLD === 'object') {
             if (Array.isArray(jsonLD)) {
@@ -179,17 +179,18 @@ export class ThingAnalyzer {
 
     /**
      * Check if a Property is compatible with the Offering model.
-     * @param {any} property
+     * @param property
+     * @param {string} name
      * @return {boolean}
      */
-    private isPropertyDirectlyCompatible(property: any): boolean {
+    private isPropertyDirectlyCompatible(property: any, name: string): boolean {
         // Check forms: At least one should be compatible
         let formsOk = false;
         for (let i = 0; i < property.forms.length; i++) {
             formsOk = formsOk || this.isFormCompatible(property.forms[i]);
         }
         if (!formsOk) {
-            if (this.config.moreLogs) console.log("Property", property.label, "not compatible: no valid form.");
+            if (this.config.moreLogs) console.log("Property", name, "not compatible: no valid form.");
             return false;
         }
         // Check schema
@@ -198,17 +199,18 @@ export class ThingAnalyzer {
 
     /**
      * Check if an Action is compatible with the Offering model.
-     * @param {any} action
+     * @param action
+     * @param {string} name
      * @return {boolean}
      */
-    private isActionDirectlyCompatible(action: any): boolean {
+    private isActionDirectlyCompatible(action: any, name: string): boolean {
         // Check forms: At least one should be compatible
         let formsOk = false;
         for (let i = 0; i < action.forms.length; i++) {
             formsOk = formsOk || this.isFormCompatible(action.forms[i]);
         }
         if (!formsOk) {
-            if (this.config.moreLogs) console.log("Action", action.label, "not compatible: no valid form.");
+            if (this.config.moreLogs) console.log("Action", name, "not compatible: no valid form.");
             return false;
         }
         // Check inputSchema and outputSchema
@@ -222,8 +224,8 @@ export class ThingAnalyzer {
      */
     private isFormCompatible(form: WoT.Form): boolean {
         // COAP and HTTP PUT are not compatible yet
-        return form.hasOwnProperty['coap:methodCode'] ||
-            (form.hasOwnProperty['http:methodName'] && form['http:methodName'] === "PUT");
+        return !(form.hasOwnProperty['coap:methodCode'] ||
+            (form.hasOwnProperty['http:methodName'] && form['http:methodName'] === "PUT"));
     }
 
     /**

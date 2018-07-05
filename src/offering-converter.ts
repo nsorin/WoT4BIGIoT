@@ -118,7 +118,6 @@ export class OfferingConverter {
                 promises.push(this.consumer.get(offeringIds[i]));
             }
             Promise.all(promises).then((values) => {
-                console.log('Values are:', values);
                 let providerMap: any = {};
                 for (let i = 0; i < values.length; i++) {
                     if (!providerMap.hasOwnProperty(values[i].offering.provider.id)) {
@@ -133,7 +132,7 @@ export class OfferingConverter {
                             + OfferingConverter.PROVIDER_URI + providerId;
                     }
                     try {
-                        this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id]);
+                        this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id], true);
                     } catch (e) {
                         console.log('Error in interaction generation:', e);
                     }
@@ -148,18 +147,27 @@ export class OfferingConverter {
     }
 
     /**
-     * Generates and appends an interaction to a Thing based on an offering.
+     * Get the current consumer.
+     * @return {string}
+     */
+    public getConsumer(): string {
+        return this.consumer;
+    }
+
+    /**
+     * Generate and append an interaction to a Thing based on an offering.
      * @param offering
      * @param {Thing} thing
+     * @param {boolean} removeProviderName
      * @return {any}
      */
-    private generateInteraction(offering: any, thing: Thing): any {
-        let endpoint = offering.endpoints.length > 0 ? offering.endpoints[0] : null;
+    private generateInteraction(offering: any, thing: Thing, removeProviderName: boolean = false): any {
+        let endpoint = offering.endpoints.length > 0 ? offering.endpoints[0] : undefined;
         if (!endpoint) {
             throw 'No endpoint found, cannot generate interaction';
         }
         // Create interaction name
-        let name = offering.name ? sanitize(offering.name) : sanitize(offering.id);
+        let name = sanitize(removeProviderName ? offering.id.replace(offering.provider.id + '-', '') : offering.id);
         let uri = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offering.id;
         // Create forms
         let forms: Array<Form> = OfferingConverter.convertEndpointsToForm(offering.endpoints);
@@ -168,6 +176,7 @@ export class OfferingConverter {
             // Then this is an event
             let event = new EventFragment();
             event.forms = forms;
+            event.label = offering.name;
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(event, offering);
             event[OfferingConverter.SEMANTIC_ID] = uri;
@@ -180,6 +189,7 @@ export class OfferingConverter {
             property.observable = false;
             Object.assign(property, OfferingConverter.convertOutputSchemaSimple(offering.outputs));
             property.forms = forms;
+            property.label = offering.name;
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(property, offering);
             property[OfferingConverter.SEMANTIC_ID] = uri;
@@ -191,6 +201,7 @@ export class OfferingConverter {
             property.readable = false;
             property.observable = false;
             property.forms = forms;
+            property.label = offering.name;
             Object.assign(property, OfferingConverter.convertInputSchemaSimple(offering.inputs));
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(property, offering);
@@ -202,6 +213,7 @@ export class OfferingConverter {
             action.input = OfferingConverter.convertInputSchemaSimple(offering.inputs);
             action.output = OfferingConverter.convertOutputSchemaSimple(offering.outputs);
             action.forms = forms;
+            action.label = offering.name;
             // BIG IoT Metadata
             OfferingConverter.addBigIotMetadata(action, offering);
             action[OfferingConverter.SEMANTIC_ID] = uri;
@@ -220,7 +232,7 @@ export class OfferingConverter {
             [MetadataManager.MONEY]: offering.price.money ? {
                 [MetadataManager.CURRENCY]: offering.price.money.currency,
                 [MetadataManager.AMOUNT]: offering.price.money.amount
-            } : null
+            } : undefined
         };
         obj[MetadataManager.LICENSE] = offering.license;
         obj[MetadataManager.CATEGORY] = offering.rdfAnnotation.uri;
@@ -235,7 +247,7 @@ export class OfferingConverter {
                     [MetadataManager.B_LATITUDE]: offering.spatialExtent.boundary.l2.lat,
                     [MetadataManager.B_LONGITUDE]: offering.spatialExtent.boundary.l2.lng
                 }
-            } : null
+            } : undefined
         };
     }
 
