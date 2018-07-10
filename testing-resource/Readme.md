@@ -10,3 +10,5 @@ back and forth conversion.
 __quality-config.json__: Alternate config.json file used when testing the quality of the conversion.
 
 __thing-list.txt__: List of thing URIs to use when testing the scalability of the gateway.
+
+__quantity-config.json__: Alternate config.json file used when testing the scalability of the gateway.
