@@ -10,10 +10,8 @@ import readline = require('readline');
  */
 export class HistoryStore {
 
-    private config: Configuration;
-    private memoryStore = [];
-    public readonly source: GatewayRoute;
-    private readonly fileStream: fs.WriteStream;
+    private _memoryStore = [];
+    private readonly _fileStream: fs.WriteStream;
 
     public static readonly DATE_FIELD_NAME = 'date';
     public static readonly VALUES_FIELD_NAME = 'values';
@@ -26,29 +24,27 @@ export class HistoryStore {
 
     /**
      * Constructor. Create a new store based on a GatewayRoute.
-     * @param {Configuration} config
-     * @param {GatewayRoute} source
+     * @param {Configuration} _config Configuration used by the API.
+     * @param {GatewayRoute} _source GatewayRoute used to get values.
      */
-    constructor(config: Configuration, source: GatewayRoute) {
-        this.config = config;
-        this.source = source;
+    constructor(
+        private _config: Configuration,
+        private _source: GatewayRoute
+    ) {
+        this._fileStream = fs.createWriteStream(path.resolve(HistoryStore.STORES_PATH, this._source.uri + HistoryStore.STORES_EXTENSION), {flags: 'a'});
 
-        this.fileStream = fs.createWriteStream(path.resolve(HistoryStore.STORES_PATH, this.source.uri + HistoryStore.STORES_EXTENSION), {flags: 'a'});
+        this._source.convertedInputSchema.push(HistoryStore.START_FIELD);
+        this._source.convertedInputSchema.push(HistoryStore.END_FIELD);
+        this._source.convertedOutputSchema.push(HistoryStore.DATE_FIELD);
 
-        this.source.convertedInputSchema.push(HistoryStore.START_FIELD);
-        this.source.convertedInputSchema.push(HistoryStore.END_FIELD);
-        this.source.convertedOutputSchema.push(HistoryStore.DATE_FIELD);
-
-
-
-        if (this.config.history.onDisk) {
+        if (this._config.history.onDisk) {
             setInterval(() => {
                 this.callSource((result) => this.writeStoreOnDisk(result));
-            }, this.config.history.period);
+            }, this._config.history.period);
         } else {
             setInterval(() => {
                 this.callSource((result) => this.writeStore(result));
-            }, this.config.history.period);
+            }, this._config.history.period);
         }
     }
 
@@ -59,7 +55,11 @@ export class HistoryStore {
      * @return {Promise<any>}
      */
     public readStore(startTime?, endTime?): Promise<any> {
-        return this.config.history.onDisk ? this.readOnDisk(startTime, endTime) : this.read(startTime, endTime);
+        return this._config.history.onDisk ? this.readOnDisk(startTime, endTime) : this.read(startTime, endTime);
+    }
+
+    get source(): GatewayRoute {
+        return this._source;
     }
 
     /**
@@ -72,7 +72,7 @@ export class HistoryStore {
         return new Promise((resolve, reject) => {
             // Deep copy of the array to keep the state at the time the function is called
             //TODO Remove this hack
-            let returnValue = JSON.parse(JSON.stringify(this.memoryStore));
+            let returnValue = JSON.parse(JSON.stringify(this._memoryStore));
             if (startTime) {
                 // Remove values before start time
                 let initialLength = returnValue.length;
@@ -109,7 +109,7 @@ export class HistoryStore {
      */
     private readOnDisk(startTime?, endTime?) {
         return new Promise((resolve, reject) => {
-            let reader = readline.createInterface({input: fs.createReadStream(this.fileStream.path)});
+            let reader = readline.createInterface({input: fs.createReadStream(this._fileStream.path)});
             let result = [];
             reader.on('line', (line) => {
                 try {
@@ -132,7 +132,7 @@ export class HistoryStore {
      */
     private callSource(callback) {
         let newObject = {[HistoryStore.DATE_FIELD_NAME]: dateTime.create().format('Y-m-dTH:M:S')};
-        this.source.access({}).then((data) => {
+        this._source.access({}).then((data) => {
             if (data.length === 1) {
                 Object.assign(newObject, data[0]);
             } else {
@@ -147,9 +147,9 @@ export class HistoryStore {
      * @param newObject
      */
     private writeStore(newObject) {
-        this.memoryStore.push(newObject);
-        if (this.memoryStore.length > this.config.history.limit) {
-            this.memoryStore.shift();
+        this._memoryStore.push(newObject);
+        if (this._memoryStore.length > this._config.history.limit) {
+            this._memoryStore.shift();
         }
     }
 
@@ -158,7 +158,7 @@ export class HistoryStore {
      * @param newObject
      */
     private writeStoreOnDisk(newObject) {
-        this.fileStream.write(JSON.stringify(newObject) + '\n');
+        this._fileStream.write(JSON.stringify(newObject) + '\n');
     }
 
 }

@@ -6,14 +6,10 @@ import {Configuration} from "./configuration";
  */
 export class ThingAnalyzer {
 
-    private config: Configuration;
-
     /**
-     * Constructor.
-     * @param {Configuration} config Must be initialized!
+     * @param {Configuration} _config Configuration used by the API.
      */
-    constructor(config: Configuration) {
-        this.config = config;
+    constructor(private _config: Configuration) {
     }
 
     /**
@@ -22,7 +18,7 @@ export class ThingAnalyzer {
      * @return {boolean}
      */
     public isThingDirectlyCompatible(thing: Thing): boolean {
-        if (this.config.moreLogs) console.log('Checking thing for direct compatibility:', thing.name);
+        if (this._config.moreLogs) console.log('Checking thing for direct compatibility:', thing.name);
         // Check properties
         for (let i in thing.properties) {
             if (thing.properties.hasOwnProperty(i)) {
@@ -112,14 +108,14 @@ export class ThingAnalyzer {
      * @param {Thing} thing2
      * @return {boolean}
      */
-    public areThingsIdentical(thing1: Thing, thing2: Thing): boolean {
+    public static areThingsIdentical(thing1: Thing, thing2: Thing): boolean {
         return thing1.name === thing2.name
             // Exactly same interactions
             && Object.keys(thing1.properties).length === Object.keys(thing2.properties).length
             && Object.keys(thing1.actions).length === Object.keys(thing2.actions).length
-            && this.areInteractionsIdentical(thing1.properties, thing2.properties)
-            && this.areInteractionsIdentical(thing1.actions, thing2.actions)
-            && this.areSemanticTypesIdentical(thing1['@type'], thing2['@type']);
+            && ThingAnalyzer.areInteractionsIdentical(thing1.properties, thing2.properties)
+            && ThingAnalyzer.areInteractionsIdentical(thing1.actions, thing2.actions)
+            && ThingAnalyzer.areSemanticTypesIdentical(thing1['@type'], thing2['@type']);
     }
 
     /**
@@ -128,7 +124,7 @@ export class ThingAnalyzer {
      * @param interactions2
      * @return {boolean}
      */
-    private areInteractionsIdentical(interactions1: any, interactions2: any): boolean {
+    private static areInteractionsIdentical(interactions1: any, interactions2: any): boolean {
         for (let key in interactions1) {
             if (interactions1.hasOwnProperty(key) && interactions2.hasOwnProperty(key)) {
                 if (JSON.stringify(interactions1[key].input) !== JSON.stringify(interactions2[key].input)
@@ -138,7 +134,7 @@ export class ThingAnalyzer {
                     || interactions1[key].observable !== interactions2[key].observable
                     || interactions1[key].const !== interactions2[key].const
                     // Semantic types
-                    || !this.areSemanticTypesIdentical(interactions1[key]['@type'], interactions2[key]['@type'])
+                    || !ThingAnalyzer.areSemanticTypesIdentical(interactions1[key]['@type'], interactions2[key]['@type'])
                 ) {
                     return false;
                 }
@@ -156,7 +152,7 @@ export class ThingAnalyzer {
      * @param {Array<string>} types2
      * @return {boolean}
      */
-    private areSemanticTypesIdentical(types1: string | Array<string>, types2: string | Array<string>) : boolean {
+    private static areSemanticTypesIdentical(types1: string | Array<string>, types2: string | Array<string>) : boolean {
         if (typeof types1 !== typeof types1) {
             return false;
         }
@@ -190,7 +186,7 @@ export class ThingAnalyzer {
             formsOk = formsOk || this.isFormCompatible(property.forms[i]);
         }
         if (!formsOk) {
-            if (this.config.moreLogs) console.log("Property", name, "not compatible: no valid form.");
+            if (this._config.moreLogs) console.log("Property", name, "not compatible: no valid form.");
             return false;
         }
         // Check schema
@@ -210,7 +206,7 @@ export class ThingAnalyzer {
             formsOk = formsOk || this.isFormCompatible(action.forms[i]);
         }
         if (!formsOk) {
-            if (this.config.moreLogs) console.log("Action", name, "not compatible: no valid form.");
+            if (this._config.moreLogs) console.log("Action", name, "not compatible: no valid form.");
             return false;
         }
         // Check inputSchema and outputSchema
@@ -235,13 +231,13 @@ export class ThingAnalyzer {
      */
     private isOutputSchemaCompatible(schema: WoT.DataSchema): boolean {
         if (schema.type !== 'array' || !(Boolean(schema['items'])) || schema['items'].type !== 'object') {
-            if (this.config.moreLogs) console.log('Output is not an array: no direct compatibility!');
+            if (this._config.moreLogs) console.log('Output is not an array: no direct compatibility!');
             return false;
         }
         for (let i = 0; i < schema['items']['properties'].length; i++) {
             let field = schema['items']['properties'][i];
             if (field.schema.type === 'object' || field.schema.type === 'array') {
-                if (this.config.moreLogs) console.log('An output field has a complex type: no direct compatibility! (field:', field.name, ')');
+                if (this._config.moreLogs) console.log('An output field has a complex type: no direct compatibility! (field:', field.name, ')');
                 return false;
             }
         }
@@ -256,13 +252,13 @@ export class ThingAnalyzer {
     private isInputSchemaCompatible(schema: any): boolean {
         if (!schema) return true;
         if (schema.type !== 'object') {
-            if (this.config.moreLogs) console.log('Input is not an object: no direct compatibility!');
+            if (this._config.moreLogs) console.log('Input is not an object: no direct compatibility!');
             return false;
         }
         for (let i = 0; i < schema['properties'].length; i++) {
             let field = schema['properties'][i];
             if (field.schema.type === 'object' || field.schema.type === 'array') {
-                if (this.config.moreLogs) console.log('An input field has a complex type: no direct compatibility! (field:', field.name, ')');
+                if (this._config.moreLogs) console.log('An input field has a complex type: no direct compatibility! (field:', field.name, ')');
                 return false;
             }
         }

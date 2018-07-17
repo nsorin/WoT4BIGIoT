@@ -12,42 +12,44 @@ import {OfferingManager} from "./offering-manager";
  */
 export class Gateway {
 
-    private readonly config: Configuration;
-    private readonly offeringManager: OfferingManager;
-    private app = express();
-    private routes: Array<GatewayRoute> = [];
-    private historyStores: Array<HistoryStore> = [];
-    private initComplete = false;
+    private _app = express();
+    private _routes: Array<GatewayRoute> = [];
+    private _historyStores: Array<HistoryStore> = [];
+    private _initComplete = false;
 
     /**
-     * Constructor.
-     * @param {Configuration} config
-     * @param {OfferingManager} offeringManager
+     * @param {Configuration} _config Configuration used by the API.
+     * @param {OfferingManager} _offeringManager OfferingManager used by the API.
      */
-    constructor(config: Configuration, offeringManager: OfferingManager) {
-        this.config = config;
-        this.offeringManager = offeringManager;
+    constructor(
+        private _config: Configuration,
+        private _offeringManager: OfferingManager
+    ) {
     }
 
     /**
      * Initialize the Gateway. If init as already been performed, skip it. Should only be done if the Gateway is about
      * to be used, to avoid running a server unnecessarily.
-     * @return {Promise<any>}
+     * @return {Promise<Gateway>}
      */
-    public init(): Promise<any> {
+    public init(): Promise<Gateway> {
         return new Promise((resolve, reject) => {
-            if (this.initComplete) {
+            if (this._initComplete) {
                 resolve(this);
             } else {
-                this.app.use(express.json());
-                this.app.use(express.urlencoded({extended: true}));
-                console.log('Starting gateway server...');
-                this.app.listen(this.config.gateway.port, this.config.gateway.host, () => {
-                    console.log("Started gateway server at http://%s:%s",
-                        this.config.gateway.host, this.config.gateway.port);
-                    this.initComplete = true;
-                    resolve(this);
-                });
+                try {
+                    this._app.use(express.json());
+                    this._app.use(express.urlencoded({extended: true}));
+                    console.log('Starting gateway server...');
+                    this._app.listen(this._config.gateway.port, this._config.gateway.host, () => {
+                        console.log("Started gateway server at http://%s:%s",
+                            this._config.gateway.host, this._config.gateway.port);
+                        this._initComplete = true;
+                        resolve(this);
+                    });
+                } catch (e) {
+                    reject('Could not initialize gateway server: ' + e);
+                }
             }
         });
     }
@@ -56,49 +58,49 @@ export class Gateway {
      * Add GatewayRoutes for a set of Things, one Thing at a time.
      * @param {Array<Thing>} things
      */
-    public addSingleThings(things: Array<Thing>) {
+    public addSingleThings(things: Array<Thing>): void {
         // console.log('Received', things.length, 'to add without aggregation');
         for (let i = 0; i < things.length; i++) {
-            if (this.config.gateway.useMerge) {
+            if (this._config.gateway.useMerge) {
                 let propertyIndexes = [];
                 for (let j in things[i].properties) {
                     propertyIndexes.push(j);
                     if (things[i].properties[j].writable) {
                         let newRoute = new GatewayRoute([things[i]], [j], true);
-                        this.routes.push(newRoute);
-                        this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [j], true);
+                        this._routes.push(newRoute);
+                        this._offeringManager.addOfferingForRoute(newRoute, [things[i]], [j], true);
                     }
                 }
                 let newRoute = new GatewayRoute([things[i]], propertyIndexes);
-                if (this.config.gateway.useHistory) {
-                    this.historyStores.push(new HistoryStore(this.config, newRoute));
+                if (this._config.gateway.useHistory) {
+                    this._historyStores.push(new HistoryStore(this._config, newRoute));
                 } else {
-                    this.routes.push(newRoute);
+                    this._routes.push(newRoute);
                 }
-                this.offeringManager.addOfferingForRoute(newRoute, [things[i]], propertyIndexes);
+                this._offeringManager.addOfferingForRoute(newRoute, [things[i]], propertyIndexes);
             } else {
                 for (let j in things[i].properties) {
                     let newRoute = new GatewayRoute([things[i]], [j]);
-                    if (this.config.gateway.useHistory) {
-                        this.historyStores.push(new HistoryStore(this.config, newRoute));
+                    if (this._config.gateway.useHistory) {
+                        this._historyStores.push(new HistoryStore(this._config, newRoute));
                     } else {
-                        this.routes.push(newRoute);
+                        this._routes.push(newRoute);
                     }
-                    this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [j]);
+                    this._offeringManager.addOfferingForRoute(newRoute, [things[i]], [j]);
                     if (things[i].properties[j].writable) {
                         let newWriteRoute = new GatewayRoute([things[i]], [j], true);
-                        this.routes.push(newWriteRoute);
-                        this.offeringManager.addOfferingForRoute(newWriteRoute, [things[i]], [j], true);
+                        this._routes.push(newWriteRoute);
+                        this._offeringManager.addOfferingForRoute(newWriteRoute, [things[i]], [j], true);
                     }
                 }
             }
             for (let j in things[i].actions) {
                 let newRoute = new GatewayRoute([things[i]], [], false, j);
-                this.routes.push(newRoute);
-                this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [], false, j);
+                this._routes.push(newRoute);
+                this._offeringManager.addOfferingForRoute(newRoute, [things[i]], [], false, j);
             }
         }
-        if (this.config.gateway.useHistory) this.syncHistoryStores();
+        if (this._config.gateway.useHistory) this.syncHistoryStores();
         this.syncRoutes();
     }
 
@@ -106,56 +108,56 @@ export class Gateway {
      * Add GatewayRoutes for a set of identical Things.
      * @param {Array<Thing>} things
      */
-    public addAggregatedThings(things: Array<Thing>) {
+    public addAggregatedThings(things: Array<Thing>): void {
         console.log('Received', things.length, 'to add with aggregation');
         if (things.length > 0) {
             // All things are identical - use first one as reference:
             let thing = things[0];
-            if (this.config.gateway.useMerge) {
+            if (this._config.gateway.useMerge) {
                 let propertyIndexes = [];
                 for (let j in thing.properties) {
                     propertyIndexes.push(j);
                     if (thing.properties[j].writable) {
                         let newRoute = new GatewayRoute(things, [j], true);
-                        this.routes.push(newRoute);
-                        this.offeringManager.addOfferingForRoute(newRoute, things, [j], true);
+                        this._routes.push(newRoute);
+                        this._offeringManager.addOfferingForRoute(newRoute, things, [j], true);
                     }
                 }
-                if (this.config.gateway.useHistory) {
+                if (this._config.gateway.useHistory) {
                     let newRoute = new GatewayRoute(things, propertyIndexes);
-                    this.historyStores.push(new HistoryStore(this.config, newRoute));
-                    this.offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
+                    this._historyStores.push(new HistoryStore(this._config, newRoute));
+                    this._offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
                 } else {
                     let newRoute = new GatewayRoute(things, propertyIndexes, false, undefined,
-                        this.config.gateway.usePropertyFilters);
-                    this.routes.push(newRoute);
-                    this.offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
+                        this._config.gateway.usePropertyFilters);
+                    this._routes.push(newRoute);
+                    this._offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
                 }
             } else {
                 for (let j in thing.properties) {
-                    if (this.config.gateway.useHistory) {
+                    if (this._config.gateway.useHistory) {
                         let newRoute = new GatewayRoute(things, [j]);
-                        this.historyStores.push(new HistoryStore(this.config, newRoute));
-                        this.offeringManager.addOfferingForRoute(newRoute, things, [j]);
+                        this._historyStores.push(new HistoryStore(this._config, newRoute));
+                        this._offeringManager.addOfferingForRoute(newRoute, things, [j]);
                     } else {
                         let newRoute = new GatewayRoute(things, [j], false, undefined,
-                            this.config.gateway.usePropertyFilters);
-                        this.routes.push(newRoute);
-                        this.offeringManager.addOfferingForRoute(newRoute, things, [j]);
+                            this._config.gateway.usePropertyFilters);
+                        this._routes.push(newRoute);
+                        this._offeringManager.addOfferingForRoute(newRoute, things, [j]);
                     }
                     if (thing.properties[j].writable) {
                         let newWriteRoute = new GatewayRoute(things, [j], true);
-                        this.routes.push(newWriteRoute);
-                        this.offeringManager.addOfferingForRoute(newWriteRoute, things, [j], true);
+                        this._routes.push(newWriteRoute);
+                        this._offeringManager.addOfferingForRoute(newWriteRoute, things, [j], true);
                     }
                 }
             }
             for (let j in thing.actions) {
                 let newRoute = new GatewayRoute(things, [], false, j);
-                this.routes.push(newRoute);
-                this.offeringManager.addOfferingForRoute(newRoute, things, [], false, j);
+                this._routes.push(newRoute);
+                this._offeringManager.addOfferingForRoute(newRoute, things, [], false, j);
             }
-            if (this.config.gateway.useHistory) this.syncHistoryStores();
+            if (this._config.gateway.useHistory) this.syncHistoryStores();
             this.syncRoutes();
         }
     }
@@ -163,21 +165,21 @@ export class Gateway {
     /**
      * Check every GatewayRoute in the routes attribute and create an endpoint for those which do not have one yet.
      */
-    private syncRoutes() {
+    private syncRoutes(): void {
         console.log('Syncing routes');
-        for (let i = 0; i < this.routes.length; i++) {
-            if (!this.routes[i].registered && this.routes[i].valid) {
-                console.log('New route found: /' + this.routes[i].uri, 'with method', this.routes[i].method);
-                if (this.routes[i].method === Method.GET) {
-                    this.app.get('/' + this.routes[i].uri, (req, res) => {
+        for (let i = 0; i < this._routes.length; i++) {
+            if (!this._routes[i].registered && this._routes[i].valid) {
+                console.log('New route found: /' + this._routes[i].uri, 'with method', this._routes[i].method);
+                if (this._routes[i].method === Method.GET) {
+                    this._app.get('/' + this._routes[i].uri, (req, res) => {
                         // Separate id, filters and params
                         let id = req.query ? req.query.id : null;
                         delete req.query.id;
 
                         let filters = {};
-                        if (this.config.gateway.useAggregate && this.config.gateway.usePropertyFilters) {
-                            for (let j = 0; j < this.routes[i].propertyFiltersSchema.length; j++) {
-                                let filterName = this.routes[i].propertyFiltersSchema[j].name;
+                        if (this._config.gateway.useAggregate && this._config.gateway.usePropertyFilters) {
+                            for (let j = 0; j < this._routes[i].propertyFiltersSchema.length; j++) {
+                                let filterName = this._routes[i].propertyFiltersSchema[j].name;
                                 if (req.query[filterName]) {
                                     filters[filterName] = req.query[filterName];
                                     delete req.query[filterName];
@@ -185,22 +187,22 @@ export class Gateway {
                             }
                         }
 
-                        this.routes[i].access(req.query, id, filters).then((result) => {
+                        this._routes[i].access(req.query, id, filters).then((result) => {
                             res.send(result);
                         }).catch((err) => {
-                            res.status(400).send({ error: err });
+                            res.status(400).send({error: err});
                         });
                     });
-                } else if (this.routes[i].method === Method.POST) {
-                    this.app.post('/' + this.routes[i].uri, (req, res) => {
+                } else if (this._routes[i].method === Method.POST) {
+                    this._app.post('/' + this._routes[i].uri, (req, res) => {
                         // Separate id, filters and params
                         let id = req.body ? req.body.id : null;
                         delete req.body.id;
 
                         let filters = {};
-                        if (this.config.gateway.useAggregate && this.config.gateway.usePropertyFilters) {
-                            for (let j = 0; j < this.routes[i].propertyFiltersSchema.length; j++) {
-                                let filterName = this.routes[i].propertyFiltersSchema[j].name;
+                        if (this._config.gateway.useAggregate && this._config.gateway.usePropertyFilters) {
+                            for (let j = 0; j < this._routes[i].propertyFiltersSchema.length; j++) {
+                                let filterName = this._routes[i].propertyFiltersSchema[j].name;
                                 if (req.body[filterName]) {
                                     filters[filterName] = req.body[filterName];
                                     delete req.body[filterName];
@@ -208,14 +210,14 @@ export class Gateway {
                             }
                         }
 
-                        this.routes[i].access(req.body, id, filters).then((result) => {
+                        this._routes[i].access(req.body, id, filters).then((result) => {
                             res.send(result);
                         }).catch((err) => {
-                            res.status(400).send({ error: err });
+                            res.status(400).send({error: err});
                         });
                     });
                 }
-                this.routes[i].registered = true;
+                this._routes[i].registered = true;
             }
         }
     }
@@ -223,30 +225,30 @@ export class Gateway {
     /**
      * Check every HistoryStore in the stores attribute and create an endpoint for those which do not have one yet.
      */
-    private syncHistoryStores() {
-        for (let i = 0; i < this.historyStores.length; i++) {
-            let sourceRoute = this.historyStores[i].source;
+    private syncHistoryStores(): void {
+        for (let i = 0; i < this._historyStores.length; i++) {
+            let sourceRoute = this._historyStores[i].source;
             if (!sourceRoute.registered && sourceRoute.valid) {
                 console.log('New history store route found: /' + sourceRoute.uri, 'with method', sourceRoute.method);
                 if (sourceRoute.method === Method.GET) {
-                    this.app.get('/' + sourceRoute.uri, (req, res) => {
+                    this._app.get('/' + sourceRoute.uri, (req, res) => {
                         let startTime = req.query ? req.query.startTime : null;
                         let endTime = req.query ? req.query.endTime : null;
                         delete req.query.startTime;
                         delete req.query.endTime;
 
-                        this.historyStores[i].readStore(startTime, endTime).then((result) => {
-                           res.send(result);
+                        this._historyStores[i].readStore(startTime, endTime).then((result) => {
+                            res.send(result);
                         });
                     });
                 } else if (sourceRoute.method === Method.POST) {
-                    this.app.post('/' + sourceRoute.uri, (req, res) => {
+                    this._app.post('/' + sourceRoute.uri, (req, res) => {
                         let startTime = req.body ? req.body.startTime : null;
                         let endTime = req.body ? req.body.endTime : null;
                         delete req.body.startTime;
                         delete req.body.endTime;
 
-                        this.historyStores[i].readStore(startTime, endTime).then((result) => {
+                        this._historyStores[i].readStore(startTime, endTime).then((result) => {
                             res.send(result);
                         });
                     });
@@ -255,5 +257,4 @@ export class Gateway {
             }
         }
     }
-
 }

@@ -22,28 +22,25 @@ const THING_SAVE_PATH = '../../output/';
  * Class used for CLI commands.
  */
 class Command {
-    private readonly name: string;
-    private readonly args: string;
-    private readonly toExecute: any;
 
     /**
      * Constructor.
-     * @param name
-     * @param args
-     * @param toExecute
+     * @param _name Name of the command.
+     * @param _args Description of the command's expected arguments.
+     * @param _toExecute Function to execute when the command is used.
      */
-    constructor(name, args, toExecute) {
-        this.name = name;
-        this.args = args;
-        this.toExecute = toExecute;
+    constructor(
+        private _name: string,
+        private _args: string,
+        private _toExecute: any) {
     }
 
-    public getName() {
-        return this.name;
+    get name() {
+        return this._name;
     }
 
-    public getArgs() {
-        return this.args;
+    get args() {
+        return this._args;
     }
 
     /**
@@ -52,8 +49,8 @@ class Command {
      * @param {string} args
      * @return {any}
      */
-    public call(api, args: string) {
-        return this.toExecute(api, args.split(' '));
+    public call(api: Api, args: string) {
+        return this._toExecute(api, args.split(' '));
     }
 
 }

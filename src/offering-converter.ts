@@ -14,18 +14,18 @@ export class OfferingConverter {
     private static readonly SEMANTIC_TYPE = "@type";
     private static readonly SEMANTIC_ID = "@id";
 
-    private readonly config: Configuration;
-    private readonly consumer: any;
-    private initDone: boolean = false;
+    private readonly _consumer: any;
+    private _initComplete: boolean = false;
 
     /**
      * Constructor. Init needs to be called.
-     * @param {Configuration} config
+     * @param {Configuration} _config Configuration used by the API.
      */
-    constructor(config: Configuration) {
-        this.config = config;
-        this.consumer = new bigiot.consumer(this.config.market.consumerId,
-            this.config.market.consumerSecret, this.config.market.marketplaceUrlForConsumer);
+    constructor(
+        private _config: Configuration
+    ) {
+        this._consumer = new bigiot._consumer(this._config.market.consumerId,
+            this._config.market.consumerSecret, this._config.market.marketplaceUrlForConsumer);
     }
 
     /**
@@ -34,11 +34,11 @@ export class OfferingConverter {
      */
     public init(): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (this.initDone) {
+            if (this._initComplete) {
                 resolve(this);
             } else {
-                this.consumer.authenticate().then(() => {
-                    console.log('Consumer authentication successful for', this.config.market.consumerId);
+                this._consumer.authenticate().then(() => {
+                    console.log('Consumer authentication successful for', this._config.market.consumerId);
                     resolve(this);
                 }).catch((err) => {
                     reject(err);
@@ -55,13 +55,13 @@ export class OfferingConverter {
     public convertOne(offeringId: string): Promise<any> {
         return new Promise((resolve, reject) => {
             // Get the offering from the marketplace
-            this.consumer.get(offeringId).then((data) => {
+            this._consumer.get(offeringId).then((data) => {
                 let offering = data.offering;
                 let thing = new Thing();
                 thing[OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.OFFERING_TYPE];
                 thing.name = offering.name ? offering.name : offering.id;
-                thing.id = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
-                thing[OfferingConverter.SEMANTIC_ID] = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
+                thing.id = this._config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
+                thing[OfferingConverter.SEMANTIC_ID] = this._config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offeringId;
                 try {
                     this.generateInteraction(offering, thing);
                 } catch (e) {
@@ -85,7 +85,7 @@ export class OfferingConverter {
         return new Promise((resolve, reject) => {
             let promises: Array<Promise<any>> = [];
             for (let i = 0; i < offeringIds.length; i++) {
-                promises.push(this.consumer.get(offeringIds[i]));
+                promises.push(this._consumer.get(offeringIds[i]));
             }
             Promise.all(promises).then((values) => {
                 let thing = new Thing();
@@ -115,7 +115,7 @@ export class OfferingConverter {
         return new Promise((resolve, reject) => {
             let promises: Array<Promise<any>> = [];
             for (let i = 0; i < offeringIds.length; i++) {
-                promises.push(this.consumer.get(offeringIds[i]));
+                promises.push(this._consumer.get(offeringIds[i]));
             }
             Promise.all(promises).then((values) => {
                 let providerMap: any = {};
@@ -126,9 +126,9 @@ export class OfferingConverter {
                         providerMap[providerId] = new Thing();
                         providerMap[providerId].name = providerId;
                         providerMap[providerId][OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.PROVIDER_TYPE];
-                        providerMap[providerId].id = this.config.market.marketplaceUrlForConsumer
+                        providerMap[providerId].id = this._config.market.marketplaceUrlForConsumer
                             + OfferingConverter.PROVIDER_URI + providerId;
-                        providerMap[providerId][OfferingConverter.SEMANTIC_ID] = this.config.market.marketplaceUrlForConsumer
+                        providerMap[providerId][OfferingConverter.SEMANTIC_ID] = this._config.market.marketplaceUrlForConsumer
                             + OfferingConverter.PROVIDER_URI + providerId;
                     }
                     try {
@@ -146,12 +146,8 @@ export class OfferingConverter {
         });
     }
 
-    /**
-     * Get the current consumer.
-     * @return {string}
-     */
-    public getConsumer(): string {
-        return this.consumer;
+    get consumer(): string {
+        return this._consumer;
     }
 
     /**
@@ -168,7 +164,7 @@ export class OfferingConverter {
         }
         // Create interaction name
         let name = sanitize(removeProviderName ? offering.id.replace(offering.provider.id + '-', '') : offering.id);
-        let uri = this.config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offering.id;
+        let uri = this._config.market.marketplaceUrlForConsumer + OfferingConverter.OFFERING_URI + offering.id;
         // Create forms
         let forms: Array<Form> = OfferingConverter.convertEndpointsToForm(offering.endpoints);
         // Identify interaction pattern

@@ -11,9 +11,15 @@ export enum OfferingToThing {
 }
 
 /**
- * Configuration for the HistoryStore component.
+ * Configuration for the HistoryStore components.
  */
 class HistoryConfig {
+
+    /**
+     * @param {number} _period Interval of time between each call to the Thing(s) in a store.
+     * @param {number} _limit Maximum amount of values stored in memory before removing older values.
+     * @param {boolean} _onDisk Indicate if values should be stored on disk. If not, stored in memory.
+     */
     constructor(
         private _period: number,
         private _limit: number,
@@ -38,6 +44,15 @@ class HistoryConfig {
  * Configuration for the Gateway server.
  */
 class GatewayConfig {
+
+    /**
+     * @param {string} _host Host of the gateway server.
+     * @param {number} _port Port of the gateway server.
+     * @param {boolean} _usePropertyFilters Indicate if min/max filters are used on properties when aggregating.
+     * @param {boolean} _useMerge Indicate if properties are merged in read mode.
+     * @param {boolean} _useAggregate Indicate if identical Things are aggregated in common offerings.
+     * @param {boolean} _useHistory Indicate if HistoryStores are used for properties in read mode.
+     */
     constructor(
         private _host: string,
         private _port: number,
@@ -78,6 +93,14 @@ class GatewayConfig {
  */
 class MarketConfig {
 
+    /**
+     * @param {string} _marketplaceUrlForProvider Marketplace URL used to register new offerings.
+     * @param {string} _marketplaceUrlForConsumer Marketplace URL used to fetch existing offerings.
+     * @param {string} _providerId Provider identifier used to authenticate to the marketplace.
+     * @param {string} _providerSecret Provider secret used to authenticate to the marketplace.
+     * @param {string} _consumerId Consumer identifier used to authenticate to the marketplace.
+     * @param {string} _consumerSecret Consumer secret used to authenticate to the marketplace.
+     */
     constructor(
         private _marketplaceUrlForProvider: string,
         private _marketplaceUrlForConsumer: string,
@@ -118,6 +141,12 @@ class MarketConfig {
  */
 class SearchConfig {
 
+    /**
+     * @param {string} _cseBase Base URI of the Google Custom Search Engine used in the SemanticSearcher component.
+     * @param {string} _cseApiKey API Key used to authenticate to the Google CSE.
+     * @param {string} _cseCx Identifier used to authenticate to the Google CSE.
+     * @param {number} _maxSuggestions Maximum amount of suggestion shown to the user of the SemanticSearcher.
+     */
     constructor(
         private _cseBase: string,
         private _cseApiKey: string,

@@ -10,26 +10,25 @@ import sanitize = require('sanitize-filename');
  */
 export class OfferingManager {
 
-    private readonly config: Configuration;
-
-    private toRegister: Array<any> = [];
-    private registered: Array<any> = [];
-    private readonly baseUri: string;
-    private readonly provider: any = null;
-    private initDone: boolean = false;
+    private _toRegister: Array<any> = [];
+    private _registered: Array<any> = [];
+    private readonly _baseUri: string;
+    private readonly _provider: any = null;
+    private _initComplete: boolean = false;
 
     private static readonly ACCESS_TYPE = 'EXTERNAL';
     private static readonly ENDPOINT_TYPE_PREFIX = 'HTTP_';
 
     /**
      * Constructor. Init needs to be called.
-     * @param {Configuration} config
+     * @param {Configuration} _config
      */
-    constructor(config: Configuration) {
-        this.config = config;
-        this.baseUri = this.config.gateway.host + ':' + this.config.gateway.port;
-        this.provider = new bigiot.provider(this.config.market.providerId, this.config.market.providerSecret,
-            this.config.market.marketplaceUrlForProvider);
+    constructor(
+        private _config: Configuration
+    ) {
+        this._baseUri = this._config.gateway.host + ':' + this._config.gateway.port;
+        this._provider = new bigiot._provider(this._config.market.providerId, this._config.market.providerSecret,
+            this._config.market.marketplaceUrlForProvider);
     }
 
     /**
@@ -38,11 +37,11 @@ export class OfferingManager {
      */
     public init(): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (this.initDone) {
+            if (this._initComplete) {
                 resolve(this);
             } else {
-                this.provider.authenticate().then(() => {
-                    console.log('Provider authentication successful for', this.config.market.providerId);
+                this._provider.authenticate().then(() => {
+                    console.log('Provider authentication successful for', this._config.market.providerId);
                     resolve(this);
                 }).catch((err) => {
                     reject(err);
@@ -52,7 +51,7 @@ export class OfferingManager {
     }
 
     /**
-     * Add an offering based on a GatewayRoute. The Offering is added to the toRegister list, for future registration.
+     * Add an offering based on a GatewayRoute. The Offering is added to the _toRegister list, for future registration.
      * @param {GatewayRoute} route
      * @param {Array<Thing>} things
      * @param {Array<string>} propertyIndexes
@@ -96,16 +95,16 @@ export class OfferingManager {
         offering.inputData = route.convertedInputSchema.concat(route.propertyFiltersSchema);
         offering.outputData = route.convertedOutputSchema;
         offering.endpoints = {
-            uri: this.baseUri + '/' + route.uri,
+            uri: this._baseUri + '/' + route.uri,
             endpointType: OfferingManager.ENDPOINT_TYPE_PREFIX + route.method,
             accessInterfaceType: OfferingManager.ACCESS_TYPE
         };
-        this.toRegister.push(offering);
+        this._toRegister.push(offering);
     }
 
     /**
      * In case of direct compatibility between a Thing and the Offering model, add offerings based on the Thing. The
-     * Offerings are added to the toRegister list, for future registration.
+     * Offerings are added to the _toRegister list, for future registration.
      * @param {Thing} thing
      */
     public addOfferingsForThing(thing: Thing) {
@@ -122,7 +121,7 @@ export class OfferingManager {
                 offering.inputData = [];
                 offering.outputData = OfferingManager.convertOutputSchema(property);
                 offering.endpoints = OfferingManager.convertReadPropertyForm(property.forms);
-                this.toRegister.push(offering);
+                this._toRegister.push(offering);
                 if (property.writable) {
                     let writeOffering = new bigiot.offering(sanitize(thing.name + '-Write-' + i),
                         MetadataManager.guessCategory(thing, property));
@@ -133,7 +132,7 @@ export class OfferingManager {
                     // No output for writeProperty
                     writeOffering.outputData = [];
                     writeOffering.endpoints = OfferingManager.convertWritePropertyForm(property.forms);
-                    this.toRegister.push(writeOffering);
+                    this._toRegister.push(writeOffering);
                 }
             }
         }
@@ -149,7 +148,7 @@ export class OfferingManager {
                 offering.inputData = OfferingManager.convertInputSchema(action.input);
                 offering.outputData = OfferingManager.convertOutputSchema(action.output);
                 offering.endpoints = OfferingManager.convertInvokeActionForm(action.forms);
-                this.toRegister.push(offering);
+                this._toRegister.push(offering);
             }
         }
     }
@@ -161,17 +160,17 @@ export class OfferingManager {
     public registerOfferings() {
         return new Promise((resolve, reject) => {
             let promises = [];
-            for (let i = 0; i < this.toRegister.length; i++) {
-                promises.push(this.provider.register(this.toRegister[i]).then(() => {
-                    console.log("Successfully registered offering " + this.toRegister[i].name);
-                    this.registered.push(this.toRegister[i]);
+            for (let i = 0; i < this._toRegister.length; i++) {
+                promises.push(this._provider.register(this._toRegister[i]).then(() => {
+                    console.log("Successfully registered offering " + this._toRegister[i].name);
+                    this._registered.push(this._toRegister[i]);
                 }, (err) => {
-                    console.log("Failed to register offering " + this.toRegister[i].name);
+                    console.log("Failed to register offering " + this._toRegister[i].name);
                     // console.log(err);
                 }));
             }
             Promise.all(promises).then(() => {
-                this.toRegister = [];
+                this._toRegister = [];
                 resolve();
             });
         });
@@ -183,33 +182,25 @@ export class OfferingManager {
      */
     public unregisterOfferings(callback) {
         let promises = [];
-        for (let i = 0; i < this.registered.length; i++) {
-            promises.push(this.provider.delete(this.registered[i]).then(() => {
-                console.log("Successfully removed offering " + this.registered[i].name);
+        for (let i = 0; i < this._registered.length; i++) {
+            promises.push(this._provider.delete(this._registered[i]).then(() => {
+                console.log("Successfully removed offering " + this._registered[i].name);
             }, (err) => {
-                console.log("Failed to remove offering " + this.registered[i].name);
+                console.log("Failed to remove offering " + this._registered[i].name);
             }));
         }
         Promise.all(promises).then(() => {
-            this.registered = [];
+            this._registered = [];
             callback();
         });
     }
 
-    /**
-     * Getter for toRegister.
-     * @return {Array<any>}
-     */
-    public getOfferingsToRegister() {
-        return this.toRegister;
+    get toRegister() {
+        return this._toRegister;
     }
 
-    /**
-     * Getter for registered.
-     * @return {Array<any>}
-     */
-    public getRegisteredOfferings() {
-        return this.registered;
+    get registered() {
+        return this._registered;
     }
 
     /**
@@ -217,7 +208,7 @@ export class OfferingManager {
      * @return {string}
      */
     public getProviderId(): string {
-        return this.provider.id;
+        return this._provider.id;
     }
 
     /**

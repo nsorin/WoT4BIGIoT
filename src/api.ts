@@ -10,20 +10,20 @@ export class Api {
 
     private static readonly CONFIG_SOURCE = "../config.json";
 
-    private config: Configuration;
-    private thingAnalyzer: ThingAnalyzer;
-    private offeringManager: OfferingManager;
-    private gateway: Gateway;
-    private offeringConverter: OfferingConverter;
-    private semanticSearcher: SemanticSearcher;
+    private _config: Configuration;
+    private _thingAnalyzer: ThingAnalyzer;
+    private _offeringManager: OfferingManager;
+    private _gateway: Gateway;
+    private _offeringConverter: OfferingConverter;
+    private _semanticSearcher: SemanticSearcher;
 
     /**
      * Used to store names/URIs that are already in use for offerings in this session.
      * @type {any[]}
      */
-    private alreadyUsedOfferingNames: Array<string> = [];
+    private _alreadyUsedOfferingNames: Array<string> = [];
 
-    private initComplete = false;
+    private _initComplete = false;
 
     /**
      * Default constructor. Private to avoid having a uninitialized api.
@@ -48,22 +48,22 @@ export class Api {
     private init(configSource?: string): Promise<any> {
         return new Promise((resolve, reject) => {
             Configuration.getConfiguration(configSource ? configSource : Api.CONFIG_SOURCE).then((config) => {
-                this.config = config;
-                this.thingAnalyzer = new ThingAnalyzer(this.config);
-                this.semanticSearcher = new SemanticSearcher(this.config);
-                this.offeringConverter = new OfferingConverter(this.config);
-                this.offeringManager = new OfferingManager(this.config);
-                this.offeringConverter.init().then(() => {
-                    this.offeringManager.init().then(() => {
-                        this.gateway = new Gateway(this.config, this.offeringManager);
-                        this.initComplete = true;
+                this._config = config;
+                this._thingAnalyzer = new ThingAnalyzer(this._config);
+                this._semanticSearcher = new SemanticSearcher(this._config);
+                this._offeringConverter = new OfferingConverter(this._config);
+                this._offeringManager = new OfferingManager(this._config);
+                this._offeringConverter.init().then(() => {
+                    this._offeringManager.init().then(() => {
+                        this._gateway = new Gateway(this._config, this._offeringManager);
+                        this._initComplete = true;
                         resolve(this);
 
                         // Exit handler
-                        if (!this.config.keepOfferings) {
+                        if (!this._config.keepOfferings) {
                             console.log('Setting up exit handler');
                             let exitHandler = () => {
-                                this.offeringManager.unregisterOfferings(() => {
+                                this._offeringManager.unregisterOfferings(() => {
                                     process.exit(1);
                                 });
                             };
@@ -93,7 +93,7 @@ export class Api {
      * @return {Promise<any>}
      */
     public convertThings(tds: Array<string>) {
-        if (!this.initComplete) {
+        if (!this._initComplete) {
             throw 'ERROR: Config not initialized!';
         } else {
             // Parse all things
@@ -101,7 +101,7 @@ export class Api {
             for (let i = 0; i < tds.length; i++) {
                 try {
                     let thing = parseTD(tds[i]);
-                    thing = this.thingAnalyzer.resolveContexts(thing, ThingAnalyzer.findPrefixes(thing));
+                    thing = this._thingAnalyzer.resolveContexts(thing, ThingAnalyzer.findPrefixes(thing));
                     parsedThings.push(thing);
                 } catch (e) {
                     console.log('Could not parse thing at index', i, ':', e);
@@ -112,12 +112,12 @@ export class Api {
             let directRegistration: Array<Thing> = [];
             let gatewayRegistration: Array<Thing> = [];
             // Use parsed things
-            if (this.config.gateway.useMerge || this.config.gateway.useAggregate || this.config.gateway.useHistory) {
+            if (this._config.gateway.useMerge || this._config.gateway.useAggregate || this._config.gateway.useHistory) {
                 gatewayRegistration = parsedThings;
             } else {
                 // Sort compatible and non compatible things
                 for (let i = 0; i < parsedThings.length; i++) {
-                    if (this.thingAnalyzer.isThingDirectlyCompatible(parsedThings[i])) {
+                    if (this._thingAnalyzer.isThingDirectlyCompatible(parsedThings[i])) {
                         directRegistration.push(parsedThings[i]);
                     } else {
                         gatewayRegistration.push(parsedThings[i]);
@@ -136,7 +136,7 @@ export class Api {
      * @return {Array<any>}
      */
     public getOfferingsToRegister() {
-        return this.offeringManager.getOfferingsToRegister();
+        return this._offeringManager.toRegister;
     }
 
     /**
@@ -144,7 +144,7 @@ export class Api {
      * @return {Array<any>}
      */
     public getRegisteredOfferings() {
-        return this.offeringManager.getRegisteredOfferings();
+        return this._offeringManager.registered;
     }
 
     /**
@@ -152,14 +152,14 @@ export class Api {
      * @return {Promise<any>}
      */
     public registerAllOfferings() {
-        return this.offeringManager.registerOfferings();
+        return this._offeringManager.registerOfferings();
     }
 
     /**
      * Delete all registered offerings from the marketplace.
      */
     public deleteAllOfferings() {
-        return this.offeringManager.unregisterOfferings(() => {
+        return this._offeringManager.unregisterOfferings(() => {
             console.log('Deleted all offerings!');
         });
     }
@@ -171,14 +171,14 @@ export class Api {
      */
     public convertOfferings(offeringIds: Array<string>): Promise<Array<Thing>> {
         return new Promise((resolve, reject) => {
-            if (!this.initComplete) {
+            if (!this._initComplete) {
                 reject('Configuration not initialized!');
             } else {
-                switch (this.config.offeringConversionStrategy) {
+                switch (this._config.offeringConversionStrategy) {
                     case OfferingToThing.OFFERING_TO_THING:
                         let promises: Array<Promise<any>> = [];
                         for (let i = 0; i < offeringIds.length; i++) {
-                            promises.push(this.offeringConverter.convertOne(offeringIds[i]));
+                            promises.push(this._offeringConverter.convertOne(offeringIds[i]));
                         }
                         Promise.all(promises).then((data) => {
                             console.log('Offerings converted!');
@@ -189,7 +189,7 @@ export class Api {
                         });
                         break;
                     case OfferingToThing.MARKETPLACE_TO_THING:
-                        this.offeringConverter.convertMultiple(offeringIds).then((data) => {
+                        this._offeringConverter.convertMultiple(offeringIds).then((data) => {
                             console.log('Offerings converted!');
                             resolve([data]);
                         }).catch((err) => {
@@ -198,7 +198,7 @@ export class Api {
                         });
                         break;
                     case OfferingToThing.PROVIDER_TO_THING:
-                        this.offeringConverter.convertMultipleByProvider(offeringIds).then((data) => {
+                        this._offeringConverter.convertMultipleByProvider(offeringIds).then((data) => {
                             resolve(data);
                             console.log('Offerings converted!');
                         }).catch((err) => {
@@ -217,7 +217,7 @@ export class Api {
      * @return {Promise<Array<SearchResult>>}
      */
     public getSemanticTypeSuggestions(name: string): Promise<Array<SearchResult>> {
-        return this.semanticSearcher.makePropertySearch(name);
+        return this._semanticSearcher.makePropertySearch(name);
     }
 
     /**
@@ -225,7 +225,7 @@ export class Api {
      * @return {string}
      */
     public getProviderId(): string {
-        return this.offeringManager.getProviderId();
+        return this._offeringManager.getProviderId();
     }
 
     /**
@@ -233,7 +233,7 @@ export class Api {
      * @return {string}
      */
     public getConsumer(): any {
-        return this.offeringConverter.getConsumer();
+        return this._offeringConverter.consumer;
     }
 
     /**
@@ -244,7 +244,7 @@ export class Api {
         for (let i = 0; i < things.length; i++) {
             // Rename duplicates
             let fakeIndex = 0;
-            while (this.alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
+            while (this._alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
                 let fakeIndexString = String(fakeIndex);
                 if (fakeIndex === 0) {
                     things[i].name = things[i].name + (++fakeIndex);
@@ -252,8 +252,8 @@ export class Api {
                     things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
                 }
             }
-            this.alreadyUsedOfferingNames.push(things[i].name);
-            this.offeringManager.addOfferingsForThing(things[i]);
+            this._alreadyUsedOfferingNames.push(things[i].name);
+            this._offeringManager.addOfferingsForThing(things[i]);
         }
     }
 
@@ -262,14 +262,14 @@ export class Api {
      * @param {Array<Thing>} things
      */
     private convertThingsWithGateway(things: Array<Thing>): void {
-        this.gateway.init().then((gateway) => {
-            if (this.config.gateway.useAggregate) {
+        this._gateway.init().then((gateway) => {
+            if (this._config.gateway.useAggregate) {
                 // Identify identical things
                 let identicalThings: Array<Array<Thing>> = [];
                 for (let i = 0; i < things.length; i++) {
                     let ok = false;
                     for (let j = 0; j < identicalThings.length; j++) {
-                        if (this.thingAnalyzer.areThingsIdentical(identicalThings[j][0], things[i])) {
+                        if (ThingAnalyzer.areThingsIdentical(identicalThings[j][0], things[i])) {
                             identicalThings[j].push(things[i]);
                             ok = true;
                         }
@@ -282,7 +282,7 @@ export class Api {
                 for (let i = 0; i < identicalThings.length; i++) {
                     // Rename duplicates
                     let fakeIndex = 0;
-                    while (this.alreadyUsedOfferingNames.indexOf(identicalThings[i][0].name) > -1) {
+                    while (this._alreadyUsedOfferingNames.indexOf(identicalThings[i][0].name) > -1) {
                         let fakeIndexString = String(fakeIndex);
                         if (fakeIndex === 0) {
                             identicalThings[i][0].name = identicalThings[i][0].name + (++fakeIndex);
@@ -290,15 +290,15 @@ export class Api {
                             identicalThings[i][0].name = identicalThings[i][0].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
                         }
                     }
-                    this.alreadyUsedOfferingNames.push(identicalThings[i][0].name);
+                    this._alreadyUsedOfferingNames.push(identicalThings[i][0].name);
                     // Once the name is unique, add to the gateway.
-                    this.gateway.addAggregatedThings(identicalThings[i]);
+                    this._gateway.addAggregatedThings(identicalThings[i]);
                 }
             } else {
                 for (let i = 0; i < things.length; i++) {
                     // Rename duplicates
                     let fakeIndex = 0;
-                    while (this.alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
+                    while (this._alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
                         let fakeIndexString = String(fakeIndex);
                         if (fakeIndex === 0) {
                             things[i].name = things[i].name + (++fakeIndex);
@@ -306,10 +306,12 @@ export class Api {
                             things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
                         }
                     }
-                    this.alreadyUsedOfferingNames.push(things[i].name);
+                    this._alreadyUsedOfferingNames.push(things[i].name);
                 }
                 gateway.addSingleThings(things);
             }
+        }).catch((err) => {
+            console.log('ERROR:', err);
         });
     }
 }

@@ -5,33 +5,49 @@ import {Configuration} from "./configuration";
  * Contains the relevant information to display the result of a search using the SemanticSearcher component.
  */
 export class SearchResult {
-    public readonly uri: string;
-    public readonly description: string;
 
     /**
      * Constructor.
-     * @param {string} uri
-     * @param {string} desc
+     * @param {string} _uri URI of the result.
+     * @param {string} _description Short textual description of the result.
      */
-    constructor(uri: string, desc: string) {
-        this.uri = uri;
-        this.description = desc;
+    constructor(
+        private _uri: string,
+        private _description
+    ) {
+    }
+
+    get uri(): string {
+        return this._uri;
+    }
+
+    get description(): string {
+        return this._description;
     }
 }
 
 export class SemanticSearcher {
 
-    private readonly config;
-
-    constructor(config: Configuration) {
-        this.config = config;
+    /**
+     * @param {Configuration} _config Configuration used by the API.
+     */
+    constructor(private _config: Configuration) {
     }
 
-    public makePropertySearch(propertyName: string): Promise<any> {
+    /**
+     * Make a search using the Google CSE for a property name.
+     * The name is first split into keywords then used in the CSE.
+     * @param {string} propertyName
+     * @return {Promise<any>}
+     */
+    public makePropertySearch(propertyName: string): Promise<Array<SearchResult>> {
         return new Promise((resolve, reject) => {
+            // Split property name into keywords
             let keywords = SemanticSearcher.splitPropertyName(propertyName);
-            let query = this.config.search.cseBase + "key=" + this.config.search.cseApiKey
-                + "&cx=" + this.config.search.cseCx + "&q=" + keywords.join("+");
+            // Send the keywords to the CSE
+            let query = this._config.search.cseBase + "key=" + this._config.search.cseApiKey
+                + "&cx=" + this._config.search.cseCx + "&q=" + keywords.join("+");
+            // Make request
             https.get(query, (res) => {
                 res.setEncoding("utf8");
                 let body = "";
@@ -42,12 +58,13 @@ export class SemanticSearcher {
                         let json = JSON.parse(body);
                         let index = 0;
                         let results: Array<SearchResult> = [];
-                        while (index < json.items.length && results.length < this.config.search.maxSuggestions) {
+                        // Limit amount of results
+                        while (index < json.items.length && results.length < this._config.search.maxSuggestions) {
                             let item = json.items[index];
                             if (SemanticSearcher.isValidResult(item.link)) {
                                 results.push(new SearchResult(item.link, item.snippet));
+                                index++;
                             }
-                            index++;
                         }
                         resolve(results);
                     } catch (e) {
@@ -58,6 +75,11 @@ export class SemanticSearcher {
         });
     }
 
+    /**
+     * Split a property (variable) name, assuming it is using either the camelCase format or underscore separators.
+     * @param {string} propertyName
+     * @return {Array<string>}
+     */
     private static splitPropertyName(propertyName: string): Array<string>{
         // Split underscore
         let afterSplit = propertyName.split('_');
@@ -69,7 +91,13 @@ export class SemanticSearcher {
         return final;
     }
 
+    /**
+     * Check the validity of a CSE result. Some result may not be SemanticTypes but other web pages.
+     * @param {string} link
+     * @return {boolean}
+     */
     private static isValidResult(link: string): boolean {
+        // Check that the result starts with the right URL and has no file extension or sub directories at the end.
         return /^((?:https:\/\/schema\.org\/)|(?:http:\/\/schema\.big-iot\.org\/mobility\/)|(?:http:\/\/schema\.big-iot\.org\/environment\/))[a-z A-Z]+$/.test(link);
     }
 
