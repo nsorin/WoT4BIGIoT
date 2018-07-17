@@ -46,6 +46,8 @@ export class Gateway {
                             this._config.gateway.host, this._config.gateway.port);
                         this._initComplete = true;
                         resolve(this);
+                    }).on('error', (err) => {
+                        reject('Express error: ' + err);
                     });
                 } catch (e) {
                     reject('Could not initialize gateway server: ' + e);

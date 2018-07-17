@@ -27,7 +27,7 @@ export class OfferingManager {
         private _config: Configuration
     ) {
         this._baseUri = this._config.gateway.host + ':' + this._config.gateway.port;
-        this._provider = new bigiot._provider(this._config.market.providerId, this._config.market.providerSecret,
+        this._provider = new bigiot.provider(this._config.market.providerId, this._config.market.providerSecret,
             this._config.market.marketplaceUrlForProvider);
     }
 

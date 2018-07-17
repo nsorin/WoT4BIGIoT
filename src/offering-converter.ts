@@ -24,7 +24,7 @@ export class OfferingConverter {
     constructor(
         private _config: Configuration
     ) {
-        this._consumer = new bigiot._consumer(this._config.market.consumerId,
+        this._consumer = new bigiot.consumer(this._config.market.consumerId,
             this._config.market.consumerSecret, this._config.market.marketplaceUrlForConsumer);
     }
 

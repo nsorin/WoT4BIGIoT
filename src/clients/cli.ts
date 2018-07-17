@@ -75,7 +75,7 @@ Api.getApi().then((api) => {
     console.log('Usage: ');
     for (let i in COMMANDS) {
         if (COMMANDS.hasOwnProperty(i)) {
-            console.log(COMMANDS[i].getName(), COMMANDS[i].getArgs());
+            console.log(COMMANDS[i].name, COMMANDS[i].args);
         }
     }
     console.log('----------------------------------------------------------------');

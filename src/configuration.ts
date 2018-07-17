@@ -259,8 +259,8 @@ export class Configuration {
 
                     // Gateway config
                     this._gateway = new GatewayConfig(
-                        body.gateway.port,
                         body.gateway.host,
+                        body.gateway.port,
                         body.gateway.usePropertyFilters,
                         body.gateway.useMerge,
                         body.gateway.useAggregate,
