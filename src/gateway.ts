@@ -59,7 +59,7 @@ export class Gateway {
     public addSingleThings(things: Array<Thing>) {
         // console.log('Received', things.length, 'to add without aggregation');
         for (let i = 0; i < things.length; i++) {
-            if (this.config.useMerge) {
+            if (this.config.gateway.useMerge) {
                 let propertyIndexes = [];
                 for (let j in things[i].properties) {
                     propertyIndexes.push(j);
@@ -70,7 +70,7 @@ export class Gateway {
                     }
                 }
                 let newRoute = new GatewayRoute([things[i]], propertyIndexes);
-                if (this.config.useHistory) {
+                if (this.config.gateway.useHistory) {
                     this.historyStores.push(new HistoryStore(this.config, newRoute));
                 } else {
                     this.routes.push(newRoute);
@@ -79,7 +79,7 @@ export class Gateway {
             } else {
                 for (let j in things[i].properties) {
                     let newRoute = new GatewayRoute([things[i]], [j]);
-                    if (this.config.useHistory) {
+                    if (this.config.gateway.useHistory) {
                         this.historyStores.push(new HistoryStore(this.config, newRoute));
                     } else {
                         this.routes.push(newRoute);
@@ -98,7 +98,7 @@ export class Gateway {
                 this.offeringManager.addOfferingForRoute(newRoute, [things[i]], [], false, j);
             }
         }
-        if (this.config.useHistory) this.syncHistoryStores();
+        if (this.config.gateway.useHistory) this.syncHistoryStores();
         this.syncRoutes();
     }
 
@@ -107,11 +107,11 @@ export class Gateway {
      * @param {Array<Thing>} things
      */
     public addAggregatedThings(things: Array<Thing>) {
-        // console.log('Received', things.length, 'to add with aggregation');
+        console.log('Received', things.length, 'to add with aggregation');
         if (things.length > 0) {
             // All things are identical - use first one as reference:
             let thing = things[0];
-            if (this.config.useMerge) {
+            if (this.config.gateway.useMerge) {
                 let propertyIndexes = [];
                 for (let j in thing.properties) {
                     propertyIndexes.push(j);
@@ -121,25 +121,25 @@ export class Gateway {
                         this.offeringManager.addOfferingForRoute(newRoute, things, [j], true);
                     }
                 }
-                if (this.config.useHistory) {
+                if (this.config.gateway.useHistory) {
                     let newRoute = new GatewayRoute(things, propertyIndexes);
                     this.historyStores.push(new HistoryStore(this.config, newRoute));
                     this.offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
                 } else {
                     let newRoute = new GatewayRoute(things, propertyIndexes, false, undefined,
-                        this.config.aggregation.usePropertyFilters);
+                        this.config.gateway.usePropertyFilters);
                     this.routes.push(newRoute);
                     this.offeringManager.addOfferingForRoute(newRoute, things, propertyIndexes);
                 }
             } else {
                 for (let j in thing.properties) {
-                    if (this.config.useHistory) {
+                    if (this.config.gateway.useHistory) {
                         let newRoute = new GatewayRoute(things, [j]);
                         this.historyStores.push(new HistoryStore(this.config, newRoute));
                         this.offeringManager.addOfferingForRoute(newRoute, things, [j]);
                     } else {
                         let newRoute = new GatewayRoute(things, [j], false, undefined,
-                            this.config.aggregation.usePropertyFilters);
+                            this.config.gateway.usePropertyFilters);
                         this.routes.push(newRoute);
                         this.offeringManager.addOfferingForRoute(newRoute, things, [j]);
                     }
@@ -155,7 +155,7 @@ export class Gateway {
                 this.routes.push(newRoute);
                 this.offeringManager.addOfferingForRoute(newRoute, things, [], false, j);
             }
-            if (this.config.useHistory) this.syncHistoryStores();
+            if (this.config.gateway.useHistory) this.syncHistoryStores();
             this.syncRoutes();
         }
     }
@@ -175,7 +175,7 @@ export class Gateway {
                         delete req.query.id;
 
                         let filters = {};
-                        if (this.config.useAggregate && this.config.aggregation.usePropertyFilters) {
+                        if (this.config.gateway.useAggregate && this.config.gateway.usePropertyFilters) {
                             for (let j = 0; j < this.routes[i].propertyFiltersSchema.length; j++) {
                                 let filterName = this.routes[i].propertyFiltersSchema[j].name;
                                 if (req.query[filterName]) {
@@ -198,7 +198,7 @@ export class Gateway {
                         delete req.body.id;
 
                         let filters = {};
-                        if (this.config.useAggregate && this.config.aggregation.usePropertyFilters) {
+                        if (this.config.gateway.useAggregate && this.config.gateway.usePropertyFilters) {
                             for (let j = 0; j < this.routes[i].propertyFiltersSchema.length; j++) {
                                 let filterName = this.routes[i].propertyFiltersSchema[j].name;
                                 if (req.body[filterName]) {

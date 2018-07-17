@@ -14,10 +14,11 @@
   },
   "gateway": {
     "host":"127.0.0.1",
-    "port": 8081
-  },
-  "aggregation": {
-    "usePropertyFilters": true
+    "port": 65000,
+    "usePropertyFilters": true,
+    "useMerge": true,
+    "useAggregate": false,
+    "useHistory": false
   },
   "search": {
     "cseBase": "https://www.googleapis.com/customsearch/v1?",
@@ -25,9 +26,6 @@
     "cseCx": "003337605136560670378:hxwjlekwm6e",
     "maxSuggestions": 10
   },
-  "useMerge": true,
-  "useAggregate": true,
-  "useHistory": false,
   "keepOfferings": false,
   "offeringConversionStrategy": "PROVIDER_TO_THING",
   "moreLogs": true

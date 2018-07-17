@@ -39,17 +39,23 @@ class GatewayConfig {
     /**
      * Port to listen to for the gateway server.
      */
-    public port: number
-}
-
-/**
- * Configuration used when aggregating Things.
- */
-class AggregationConfig {
+    public port: number;
     /**
      * Allow consumer to filter output of aggregated Thing offerings?
      */
     public usePropertyFilters: boolean;
+    /**
+     * Merge properties when converting Things?
+     */
+    public useMerge: boolean;
+    /**
+     * Aggregate identical Things when converting Things?
+     */
+    public useAggregate: boolean;
+    /**
+     * Use HistoryStores for properties when converting Things?
+     */
+    public useHistory: boolean;
 }
 
 /**
@@ -87,18 +93,6 @@ export class Configuration {
      */
     public moreLogs: boolean;
     /**
-     * Merge properties when converting Things?
-     */
-    public useMerge: boolean;
-    /**
-     * Aggregate identical Things when converting Things?
-     */
-    public useAggregate: boolean;
-    /**
-     * Use HistoryStores for properties when converting Things?
-     */
-    public useHistory: boolean;
-    /**
      * Keep offerings alive on the marketplace after shutting down the application?
      */
     public keepOfferings: boolean;
@@ -109,7 +103,6 @@ export class Configuration {
 
     public history = new HistoryConfig();
     public gateway = new GatewayConfig();
-    public aggregation = new AggregationConfig();
     public market = new MarketConfig();
     public search = new SearchConfig();
 
@@ -137,9 +130,6 @@ export class Configuration {
                     let body = JSON.parse(data);
                     // Root config
                     this.moreLogs = body.moreLogs;
-                    this.useMerge = body.useMerge;
-                    this.useAggregate = body.useAggregate;
-                    this.useHistory = body.useHistory;
                     this.keepOfferings = body.keepOfferings;
                     this.offeringConversionStrategy = body.offeringConversionStrategy;
 
@@ -151,9 +141,9 @@ export class Configuration {
                     // Gateway config
                     this.gateway.port = body.gateway.port;
                     this.gateway.host = body.gateway.host;
-
-                    // Aggregation config
-                    this.aggregation.usePropertyFilters = body.aggregation.usePropertyFilters;
+                    this.gateway.useMerge = body.useMerge;
+                    this.gateway.useAggregate = body.useAggregate;
+                    this.gateway.useHistory = body.useHistory;
 
                     // Marketplace config
                     this.market.marketplaceUrlForProvider = body.market.marketplaceUrlForProvider;

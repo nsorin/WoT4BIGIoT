@@ -8,7 +8,7 @@ import {SearchResult, SemanticSearcher} from "./semantic-searcher";
 
 export class Api {
 
-    private static CONFIG_SOURCE = "../config.json";
+    private static readonly CONFIG_SOURCE = "../config.json";
 
     private config: Configuration;
     private thingAnalyzer: ThingAnalyzer;
@@ -112,7 +112,7 @@ export class Api {
             let directRegistration: Array<Thing> = [];
             let gatewayRegistration: Array<Thing> = [];
             // Use parsed things
-            if (this.config.useMerge || this.config.useAggregate || this.config.useHistory) {
+            if (this.config.gateway.useMerge || this.config.gateway.useAggregate || this.config.gateway.useHistory) {
                 gatewayRegistration = parsedThings;
             } else {
                 // Sort compatible and non compatible things
@@ -232,7 +232,7 @@ export class Api {
      * Get the current consumer.
      * @return {string}
      */
-    public getConsumer(): string {
+    public getConsumer(): any {
         return this.offeringConverter.getConsumer();
     }
 
@@ -263,7 +263,7 @@ export class Api {
      */
     private convertThingsWithGateway(things: Array<Thing>): void {
         this.gateway.init().then((gateway) => {
-            if (this.config.useAggregate) {
+            if (this.config.gateway.useAggregate) {
                 // Identify identical things
                 let identicalThings: Array<Array<Thing>> = [];
                 for (let i = 0; i < things.length; i++) {

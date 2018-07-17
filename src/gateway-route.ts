@@ -599,11 +599,6 @@ export class GatewayRoute {
                         context));
                 }
             }
-        } else if (property.type === 'array') {
-            newSchema = [{
-                name: name,
-                rdfUri: MetadataManager.DEFAULT_ARRAY_TYPE
-            }];
         } else {
             let semanticType = MetadataManager.DATA_TYPE_CONVERSION[property.type];
             if (semanticType) {

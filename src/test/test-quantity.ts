@@ -22,6 +22,10 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/thing-list.txt'), (e
 
     Api.getApi(TEST_CONFIG_SOURCE).then((api: Api) => {
         let promises = [];
+        let c = 0;
+        for (let i = 8000; i < 18000; i++) {
+            c+= i;
+        }
         for (let i = 0; i < thingUris.length; i++) {
             if (thingUris[i].startsWith('http')) {
                 promises.push(new Promise((resolve, reject) => {
@@ -31,8 +35,13 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/thing-list.txt'), (e
                         res.on("data", data => {
                             body += data;
                         }).on("end", () => {
+                            let nbStr = body.substring(415, 420).replace('/', '');
+                            c -= Number(nbStr);
+                            console.log('Port was:', nbStr, 'and total is', c);
                             resolve(body);
                         });
+                    }).on('error', function(e) {
+                        console.log("Got error at", (8000 + c++), ": " + e.message);
                     });
                 }));
             } else if (thingUris[i].startsWith('coap')) {
@@ -56,7 +65,20 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/thing-list.txt'), (e
         }
         // Call api with results
         Promise.all(promises).then((tds) => {
-            api.convertThings(tds);
+            console.log('Thing List Loaded');
+            try {
+                api.convertThings(tds);
+                console.log('Conversion made');
+            } catch (e) {
+                console.log('Thing conversion error:', e);
+            }
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+            process.stdin.on('data', () => {
+                console.log('Shutting down...');
+            });
+        }).catch((err) => {
+            console.log(err);
         });
     });
 });

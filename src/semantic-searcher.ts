@@ -29,7 +29,7 @@ export class SemanticSearcher {
 
     public makePropertySearch(propertyName: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            let keywords = this.splitPropertyName(propertyName);
+            let keywords = SemanticSearcher.splitPropertyName(propertyName);
             let query = this.config.search.cseBase + "key=" + this.config.search.cseApiKey
                 + "&cx=" + this.config.search.cseCx + "&q=" + keywords.join("+");
             https.get(query, (res) => {
@@ -44,7 +44,7 @@ export class SemanticSearcher {
                         let results: Array<SearchResult> = [];
                         while (index < json.items.length && results.length < this.config.search.maxSuggestions) {
                             let item = json.items[index];
-                            if (this.isValidResult(item.link)) {
+                            if (SemanticSearcher.isValidResult(item.link)) {
                                 results.push(new SearchResult(item.link, item.snippet));
                             }
                             index++;
@@ -58,7 +58,7 @@ export class SemanticSearcher {
         });
     }
 
-    private splitPropertyName(propertyName: string) {
+    private static splitPropertyName(propertyName: string): Array<string>{
         // Split underscore
         let afterSplit = propertyName.split('_');
         let final: Array<string> = [];
@@ -69,7 +69,7 @@ export class SemanticSearcher {
         return final;
     }
 
-    private isValidResult(link: string): boolean {
+    private static isValidResult(link: string): boolean {
         return /^((?:https:\/\/schema\.org\/)|(?:http:\/\/schema\.big-iot\.org\/mobility\/)|(?:http:\/\/schema\.big-iot\.org\/environment\/))[a-z A-Z]+$/.test(link);
     }
 

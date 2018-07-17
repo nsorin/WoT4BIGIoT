@@ -259,7 +259,7 @@ export class OfferingManager {
      * @param property
      * @return {any}
      */
-    private static getPropertyRdfUri(property: any) {
+    private static getPropertyRdfUri(property: any): string {
         let type = property['@type'];
         if (type) {
             if (Array.isArray(type) && type.length > 0) {

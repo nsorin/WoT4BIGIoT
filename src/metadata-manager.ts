@@ -16,7 +16,6 @@ export class MetadataManager {
         array: "https://schema.org/ItemList",
         undefined: "https://schema.org/DataType"
     };
-    public static readonly DEFAULT_ARRAY_TYPE = "https://schema.org/ItemList";
 
     public static readonly OFFERING_TYPE = "http://schema.big-iot.org/core/Offering";
     public static readonly PROVIDER_TYPE = "http://schema.big-iot.org/core/Provider";

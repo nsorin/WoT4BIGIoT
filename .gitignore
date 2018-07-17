@@ -6,3 +6,8 @@ dist/
 output/*.json
 stores/*.store
 temp.js
+config.json
+testing-resource/quality-config.json
+testing-resource/quantity-config.json
+testing-resource/offering-list.txt
+testing-resource/thing-list.txt
