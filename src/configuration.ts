@@ -14,73 +14,133 @@ export enum OfferingToThing {
  * Configuration for the HistoryStore component.
  */
 class HistoryConfig {
-    /**
-     * Period of time between each call to the Thing when using a HistoryStore.
-     */
-    public period: number;
-    /**
-     * Maximum amount of stored outputs when using a HistoryStore which stores data in memory.
-     */
-    public limit: number;
-    /**
-     * Store HistoryStore data on a file instead of memory?
-     */
-    public onDisk: boolean;
+    constructor(
+        private _period: number,
+        private _limit: number,
+        private _onDisk: boolean
+    ) {
+    }
+
+    get period(): number {
+        return this._period;
+    }
+
+    get limit(): number {
+        return this._limit;
+    }
+
+    get onDisk(): boolean {
+        return this._onDisk;
+    }
 }
 
 /**
  * Configuration for the Gateway server.
  */
 class GatewayConfig {
-    /**
-     * Host address for the gateway server.
-     */
-    public host: string;
-    /**
-     * Port to listen to for the gateway server.
-     */
-    public port: number;
-    /**
-     * Allow consumer to filter output of aggregated Thing offerings?
-     */
-    public usePropertyFilters: boolean;
-    /**
-     * Merge properties when converting Things?
-     */
-    public useMerge: boolean;
-    /**
-     * Aggregate identical Things when converting Things?
-     */
-    public useAggregate: boolean;
-    /**
-     * Use HistoryStores for properties when converting Things?
-     */
-    public useHistory: boolean;
+    constructor(
+        private _host: string,
+        private _port: number,
+        private _usePropertyFilters: boolean,
+        private _useMerge: boolean,
+        private _useAggregate: boolean,
+        private _useHistory: boolean
+    ) {
+    }
+
+    get host(): string {
+        return this._host;
+    }
+
+    get port(): number {
+        return this._port;
+    }
+
+    get usePropertyFilters(): boolean {
+        return this._usePropertyFilters;
+    }
+
+    get useMerge(): boolean {
+        return this._useMerge;
+    }
+
+    get useAggregate(): boolean {
+        return this._useAggregate;
+    }
+
+    get useHistory(): boolean {
+        return this._useHistory;
+    }
 }
 
 /**
  * Configuration used to connect to the Marketplace.
  */
 class MarketConfig {
-    public marketplaceUrlForProvider: string;
-    public marketplaceUrlForConsumer: string;
-    public providerId: string;
-    public providerSecret: string;
-    public consumerId: string;
-    public consumerSecret: string;
+
+    constructor(
+        private _marketplaceUrlForProvider: string,
+        private _marketplaceUrlForConsumer: string,
+        private _providerId: string,
+        private _providerSecret: string,
+        private _consumerId: string,
+        private _consumerSecret: string
+    ) {
+    }
+
+    get marketplaceUrlForProvider(): string {
+        return this._marketplaceUrlForProvider;
+    }
+
+    get marketplaceUrlForConsumer(): string {
+        return this._marketplaceUrlForConsumer;
+    }
+
+    get providerId(): string {
+        return this._providerId;
+    }
+
+    get providerSecret(): string {
+        return this._providerSecret;
+    }
+
+    get consumerId(): string {
+        return this._consumerId;
+    }
+
+    get consumerSecret(): string {
+        return this._consumerSecret;
+    }
 }
 
 /**
  * Configuration used by the SemanticSearcher component.
  */
 class SearchConfig {
-    public cseBase: string;
-    public cseApiKey: string;
-    public cseCx: string;
-    /**
-     * Maximum amount of semantic annotation suggestions sent to the user after calling the SemanticSearcher.
-     */
-    public maxSuggestions: number;
+
+    constructor(
+        private _cseBase: string,
+        private _cseApiKey: string,
+        private _cseCx: string,
+        private _maxSuggestions: number
+    ) {
+    }
+
+    get cseBase(): string {
+        return this._cseBase;
+    }
+
+    get cseApiKey(): string {
+        return this._cseApiKey;
+    }
+
+    get cseCx(): string {
+        return this._cseCx;
+    }
+
+    get maxSuggestions(): number {
+        return this._maxSuggestions;
+    }
 }
 
 /**
@@ -91,31 +151,59 @@ export class Configuration {
     /**
      * Show additional logs?
      */
-    public moreLogs: boolean;
+    private _moreLogs: boolean;
     /**
      * Keep offerings alive on the marketplace after shutting down the application?
      */
-    public keepOfferings: boolean;
+    private _keepOfferings: boolean;
     /**
      * Offering to Thing conversion strategy.
      */
-    public offeringConversionStrategy: OfferingToThing;
+    private _offeringConversionStrategy: OfferingToThing;
 
-    public history = new HistoryConfig();
-    public gateway = new GatewayConfig();
-    public market = new MarketConfig();
-    public search = new SearchConfig();
+    private _history: HistoryConfig;
+    private _gateway: GatewayConfig;
+    private _market: MarketConfig;
+    private _search: SearchConfig;
 
     /**
      * Default constructor. Private to avoid having an uninitialized configuration.
      */
     private constructor() {
-        //TODO: Is there anything to do?
+        // Nothing to do here - waiting for init
     }
 
     public static getConfiguration(configSource: string): Promise<Configuration> {
         let config = new Configuration();
         return config.init(configSource);
+    }
+
+    get moreLogs(): boolean {
+        return this._moreLogs;
+    }
+
+    get keepOfferings(): boolean {
+        return this._keepOfferings;
+    }
+
+    get offeringConversionStrategy(): OfferingToThing {
+        return this._offeringConversionStrategy;
+    }
+
+    get history(): HistoryConfig {
+        return this._history;
+    }
+
+    get gateway(): GatewayConfig {
+        return this._gateway;
+    }
+
+    get market(): MarketConfig {
+        return this._market;
+    }
+
+    get search(): SearchConfig {
+        return this._search;
     }
 
     /**
@@ -129,41 +217,48 @@ export class Configuration {
                 try {
                     let body = JSON.parse(data);
                     // Root config
-                    this.moreLogs = body.moreLogs;
-                    this.keepOfferings = body.keepOfferings;
-                    this.offeringConversionStrategy = body.offeringConversionStrategy;
+                    this._moreLogs = body.moreLogs;
+                    this._keepOfferings = body.keepOfferings;
+                    this._offeringConversionStrategy = body.offeringConversionStrategy;
 
                     // History config
-                    this.history.period = body.history.period;
-                    this.history.limit = body.history.limit;
-                    this.history.onDisk = body.history.onDisk;
+                    this._history = new HistoryConfig(
+                        body.history.period,
+                        body.history.limit,
+                        body.history.onDisk
+                    );
 
                     // Gateway config
-                    this.gateway.port = body.gateway.port;
-                    this.gateway.host = body.gateway.host;
-                    this.gateway.useMerge = body.useMerge;
-                    this.gateway.useAggregate = body.useAggregate;
-                    this.gateway.useHistory = body.useHistory;
+                    this._gateway = new GatewayConfig(
+                        body.gateway.port,
+                        body.gateway.host,
+                        body.gateway.usePropertyFilters,
+                        body.gateway.useMerge,
+                        body.gateway.useAggregate,
+                        body.gateway.useHistory
+                    );
 
                     // Marketplace config
-                    this.market.marketplaceUrlForProvider = body.market.marketplaceUrlForProvider;
-                    this.market.marketplaceUrlForConsumer = body.market.marketplaceUrlForConsumer;
-                    this.market.providerId = body.market.providerId;
-                    this.market.providerSecret = body.market.providerSecret;
-                    this.market.consumerId = body.market.consumerId;
-                    this.market.consumerSecret = body.market.consumerSecret;
+                    this._market = new MarketConfig(
+                        body.market.marketplaceUrlForProvider,
+                        body.market.marketplaceUrlForConsumer,
+                        body.market.providerId,
+                        body.market.providerSecret,
+                        body.market.consumerId,
+                        body.market.consumerSecret
+                    );
 
                     // Semantic search config
-                    this.search.cseBase = body.search.cseBase;
-                    this.search.cseApiKey = body.search.cseApiKey;
-                    this.search.cseCx = body.search.cseCx;
-                    this.search.maxSuggestions = body.search.maxSuggestions;
-
-                    //TODO: Other config
+                    this._search = new SearchConfig(
+                        body.search.cseBase,
+                        body.search.cseApiKey,
+                        body.search.cseCx,
+                        body.search.maxSuggestions
+                    );
 
                     resolve(this);
                 } catch (e) {
-                    reject("Could not parse JSON config!");
+                    reject("Could not parse JSON config: " + e);
                 }
             });
         });
