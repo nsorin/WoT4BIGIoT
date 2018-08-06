@@ -151,7 +151,7 @@ export class Api {
      * Register all offerings currently waiting to be registered.
      * @return {Promise<any>}
      */
-    public registerAllOfferings() {
+    public registerAllOfferings(): Promise<void> {
         return this._offeringManager.registerOfferings();
     }
 

@@ -157,7 +157,7 @@ export class OfferingManager {
      * Check the list of offerings to register and register them on the marketplace.
      * @return {Promise<any>}
      */
-    public registerOfferings() {
+    public registerOfferings(): Promise<void> {
         return new Promise((resolve, reject) => {
             let promises = [];
             for (let i = 0; i < this._toRegister.length; i++) {
