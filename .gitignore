@@ -5,6 +5,7 @@ node_modules/
 dist/
 output/*.json
 stores/*.store
+stores/*.store.old
 temp.js
 config.json
 testing-resource/quality-config.json

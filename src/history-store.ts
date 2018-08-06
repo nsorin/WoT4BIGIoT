@@ -11,16 +11,21 @@ import readline = require('readline');
 export class HistoryStore {
 
     private _memoryStore = [];
-    private readonly _fileStream: fs.WriteStream;
+    private _fileStream: fs.WriteStream;
+    private _fileLineCount = 0;
 
     public static readonly DATE_FIELD_NAME = 'date';
     public static readonly VALUES_FIELD_NAME = 'values';
 
     private static readonly STORES_PATH = path.resolve(__dirname, '../stores');
     private static readonly STORES_EXTENSION = '.store';
+    private static readonly OLD_EXTENSION = '.old';
     private static readonly START_FIELD = {name: "startTime", rdfUri: "http://schema.big-iot.org/mobility/startTime"};
     private static readonly END_FIELD = {name: "endTime", rdfUri: "http://schema.big-iot.org/mobility/endTime"};
-    private static readonly DATE_FIELD = {name: HistoryStore.DATE_FIELD_NAME, rdfUri: "http://schema.big-iot.org/common/measurementTime"};
+    private static readonly DATE_FIELD = {
+        name: HistoryStore.DATE_FIELD_NAME,
+        rdfUri: "http://schema.big-iot.org/common/measurementTime"
+    };
 
     /**
      * Constructor. Create a new store based on a GatewayRoute.
@@ -31,15 +36,63 @@ export class HistoryStore {
         private _config: Configuration,
         private _source: GatewayRoute
     ) {
-        this._fileStream = fs.createWriteStream(path.resolve(HistoryStore.STORES_PATH, this._source.uri + HistoryStore.STORES_EXTENSION), {flags: 'a'});
-
         this._source.convertedInputSchema.push(HistoryStore.START_FIELD);
         this._source.convertedInputSchema.push(HistoryStore.END_FIELD);
         this._source.convertedOutputSchema.push(HistoryStore.DATE_FIELD);
 
         if (this._config.history.onDisk) {
+            let filePath = path.resolve(HistoryStore.STORES_PATH, this._source.uri + HistoryStore.STORES_EXTENSION);
+
+            // Get old data if allowed and if it exists
+            if (this._config.history.useOldValues && fs.existsSync(filePath)) {
+                // Read .store file
+                let content = fs.readFileSync(filePath).toString().split("\n");
+                // Remove last (empty) line
+                content.pop();
+                // If there are enough values in the .store file, use as many as needed and discard the rest
+                if (content.length >= this._config.history.limit) {
+                    let newContent = content.slice(content.length - this._config.history.limit);
+                    let dataStr = '';
+                    for (let i = 0; i < newContent.length; i++) {
+                        dataStr += newContent[i] + (i <= newContent.length - 1 ? '\n' : '');
+                    }
+                    // Write the values kept in the store
+                    fs.writeFileSync(filePath, dataStr);
+                    // Set line count to the amount of values retrieved
+                    this._fileLineCount = newContent.length;
+                // If not, look for additional values in the .store.old file (if it exists)
+                } else if (fs.existsSync(filePath + HistoryStore.OLD_EXTENSION)) {
+                    let oldContent = fs.readFileSync(filePath + HistoryStore.OLD_EXTENSION).toString().split('\n');
+                    // Remove last (empty) line
+                    oldContent.pop();
+                    // Get only the values we need
+                    let newContent = oldContent.slice(Math.max(oldContent.length - (this._config.history.limit - content.length), 0));
+                    let dataStr = '';
+                    for (let i = 0; i < newContent.length; i++) {
+                        dataStr += newContent[i] + '\n';
+                    }
+                    for (let i = 0; i < content.length; i++) {
+                        dataStr += content[i] + (i <= content.length - 1 ? '\n' : '');
+                    }
+                    // Write the values kept in the store
+                    fs.writeFileSync(filePath, dataStr);
+                    // Remove the old store
+                    fs.unlinkSync(filePath + HistoryStore.OLD_EXTENSION);
+                    // Set line count to the amount of values retrieved
+                    this._fileLineCount = content.length + newContent.length;
+                }
+            }
+
+            this._fileStream = fs.createWriteStream(filePath, {flags: 'a'});
+
             setInterval(() => {
-                this.callSource((result) => this.writeStoreOnDisk(result));
+                this.callSource((result) => {
+                    try {
+                        this.writeStoreOnDisk(result);
+                    } catch (err) {
+                        console.log('WRITE ERROR:', err);
+                    }
+                });
             }, this._config.history.period);
         } else {
             setInterval(() => {
@@ -107,19 +160,46 @@ export class HistoryStore {
      * @param endTime
      * @return {Promise<any>}
      */
-    private readOnDisk(startTime?, endTime?) {
+    private readOnDisk(startTime?: string, endTime?: string): Promise<Array<any>> {
+        let result = [];
+        // If there is an old file, read from it first
+        if (fs.existsSync(this._fileStream.path + HistoryStore.OLD_EXTENSION)) {
+            return this.readLinesOnDisk(this._fileStream.path + HistoryStore.OLD_EXTENSION, result, this._fileLineCount, startTime, endTime).then((res) => {
+                // Then read current file
+                return this.readLinesOnDisk(this._fileStream.path.toString(), res, -1, startTime, endTime);
+            });
+        } else {
+            // Read current file
+            return this.readLinesOnDisk(this._fileStream.path.toString(), result, -1, startTime, endTime);
+        }
+    }
+
+    /**
+     * Read lines in a file using a fiven path, and append them to a result array.
+     * @param {string} filePath
+     * @param {Array<any>} result
+     * @param {number} startAt
+     * @param {string} startTime
+     * @param {string} endTime
+     * @return {Promise<Array<any>>}
+     */
+    private readLinesOnDisk(filePath: string, result: Array<any>, startAt: number = -1, startTime?: string, endTime?: string): Promise<Array<any>> {
         return new Promise((resolve, reject) => {
-            let reader = readline.createInterface({input: fs.createReadStream(this._fileStream.path)});
-            let result = [];
+            let reader = readline.createInterface({input: fs.createReadStream(filePath)});
+            // Count lines read to startAt the right one
+            let counter = 0;
             reader.on('line', (line) => {
-                try {
-                    let lineObject = JSON.parse(line);
-                    if ((!startTime || startTime <= lineObject.date) && (!endTime || endTime >= lineObject.date)) {
-                        result.push(lineObject);
+                if (counter >= startAt) {
+                    try {
+                        let lineObject = JSON.parse(line);
+                        if ((!startTime || startTime <= lineObject.date) && (!endTime || endTime >= lineObject.date)) {
+                            result.push(lineObject);
+                        }
+                    } catch (e) {
+                        console.log('Could not parse line of store:', line);
                     }
-                } catch (e) {
-                    console.log('Could not parse line of store:', line);
                 }
+                counter++;
             }).on('close', (line) => {
                 resolve(result);
             });
@@ -158,7 +238,26 @@ export class HistoryStore {
      * @param newObject
      */
     private writeStoreOnDisk(newObject) {
-        this._fileStream.write(JSON.stringify(newObject) + '\n');
+        // If store file is full (reached limit)
+        if (this._fileLineCount >= this._config.history.limit) {
+            let storeName = this._fileStream.path;
+            this._fileStream.close();
+            // Remove previous "old" file since it is no longer needed
+            if (fs.existsSync(storeName + HistoryStore.OLD_EXTENSION)) {
+                fs.unlinkSync(storeName + HistoryStore.OLD_EXTENSION);
+            }
+            fs.rename(storeName, storeName + HistoryStore.OLD_EXTENSION, (err) => {
+                if (err) throw err;
+                // Create a new store file
+                this._fileStream = fs.createWriteStream(storeName, {flags: 'a'});
+                this._fileStream.write(JSON.stringify(newObject) + '\n');
+                // Reset counter
+                this._fileLineCount = 1;
+            });
+        } else {
+            this._fileStream.write(JSON.stringify(newObject) + '\n');
+            this._fileLineCount++;
+        }
     }
 
 }

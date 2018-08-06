@@ -19,11 +19,14 @@ class HistoryConfig {
      * @param {number} _period Interval of time between each call to the Thing(s) in a store.
      * @param {number} _limit Maximum amount of values stored in memory before removing older values.
      * @param {boolean} _onDisk Indicate if values should be stored on disk. If not, stored in memory.
+     * @param {boolean} _useOldValues When storing values on disk, indicate if values stored in previous instances should
+     * be retrieved.
      */
     constructor(
         private _period: number,
         private _limit: number,
-        private _onDisk: boolean
+        private _onDisk: boolean,
+        private _useOldValues: boolean
     ) {
     }
 
@@ -37,6 +40,10 @@ class HistoryConfig {
 
     get onDisk(): boolean {
         return this._onDisk;
+    }
+
+    get useOldValues(): boolean {
+        return this._useOldValues;
     }
 }
 
@@ -254,7 +261,8 @@ export class Configuration {
                     this._history = new HistoryConfig(
                         body.history.period,
                         body.history.limit,
-                        body.history.onDisk
+                        body.history.onDisk,
+                        body.history.useOldValues
                     );
 
                     // Gateway config
