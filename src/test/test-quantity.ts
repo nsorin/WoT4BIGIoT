@@ -73,6 +73,7 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/thing-list.txt'), (e
             process.stdin.resume();
             process.stdin.on('data', () => {
                 console.log('Shutting down...');
+                process.exit(0);
             });
         }).catch((err) => {
             console.log(err);

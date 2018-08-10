@@ -14,6 +14,7 @@ const SHOW_REGISTERED_OFFERINGS = 'show_registered_offerings';
 const REGISTER_ALL_OFFERINGS = 'register_all_offerings';
 const DELETE_ALL_OFFERINGS = 'delete_all_offerings';
 const REGISTER_OFFERINGS = 'register_offerings';
+const DELETE_OFFERINGS = 'delete_offerings';
 const CONVERT_OFFERINGS = 'convert_offerings';
 
 const THING_SAVE_PATH = '../../output/';
@@ -61,7 +62,8 @@ const COMMANDS = {
     [SHOW_REGISTERED_OFFERINGS]: new Command(SHOW_REGISTERED_OFFERINGS, '', showRegisteredOfferings),
     [REGISTER_ALL_OFFERINGS]: new Command(REGISTER_ALL_OFFERINGS, '', registerAllOfferings),
     [DELETE_ALL_OFFERINGS]: new Command(DELETE_ALL_OFFERINGS, '', deleteAllOfferings),
-    [REGISTER_OFFERINGS]: new Command(REGISTER_OFFERINGS, '<uri>...', registerOfferings),
+    [REGISTER_OFFERINGS]: new Command(REGISTER_OFFERINGS, '<name>...', registerOfferings),
+    [DELETE_OFFERINGS]: new Command(DELETE_OFFERINGS, '<name>...', deleteOfferings),
     [CONVERT_OFFERINGS]: new Command(CONVERT_OFFERINGS, '<offering_id>...', convertOfferings)
 };
 
@@ -175,14 +177,26 @@ function convertOfferings(api: Api, offeringIds: Array<string>): Promise<any> {
 }
 
 /**
- * Register offerings already added when converting things, based on their ids.
+ * Register offerings already added when converting things, based on their names.
  * @param {Api} api
- * @param {Array<string>} uris
+ * @param {Array<string>} names
  * @return {Promise<any>}
  */
-function registerOfferings(api: Api, uris: Array<string>) {
+function registerOfferings(api: Api, names: Array<string>) {
     return new Promise((resolve, reject) => {
-        resolve();
+        let list = api.getOfferingsToRegister();
+        let finalList: Array<any> = [];
+        for (let i = 0; i < list.length; i++) {
+            if (names.indexOf(list[i].name) > -1) {
+                finalList.push(list[i]);
+            }
+        }
+        editOffering(api, rl, finalList, 0).then(() => {
+            api.registerOfferings(names).then(() => {
+                console.log('All offerings registered!');
+                resolve();
+            });
+        });
     });
 }
 
@@ -201,6 +215,15 @@ function registerAllOfferings(api: Api) {
             });
         });
     });
+}
+
+/**
+ * Delete all registered offerings.
+ * @param {Array<string>} offeringNames
+ * @param {Api} api
+ */
+function deleteOfferings(api: Api, offeringNames: Array<string>): Promise<void> {
+    return api.deleteOfferings(offeringNames);
 }
 
 /**

@@ -63,7 +63,7 @@ export class Api {
                         if (!this._config.keepOfferings) {
                             console.log('Setting up exit handler');
                             let exitHandler = () => {
-                                this._offeringManager.unregisterOfferings(() => {
+                                this._offeringManager.unregisterAllOfferings().then(() => {
                                     process.exit(1);
                                 });
                             };
@@ -148,20 +148,36 @@ export class Api {
     }
 
     /**
+     * Register offerings based on a set of provided names.
+     * @param {Array<string>} offeringNames
+     * @return {Promise<void>}
+     */
+    public registerOfferings(offeringNames: Array<string>): Promise<void> {
+        return this._offeringManager.registerOfferings(offeringNames);
+    }
+
+    /**
      * Register all offerings currently waiting to be registered.
      * @return {Promise<any>}
      */
     public registerAllOfferings(): Promise<void> {
-        return this._offeringManager.registerOfferings();
+        return this._offeringManager.registerAllOfferings();
+    }
+
+    /**
+     * Remove offerings based on a set of provided names.
+     * @param {Array<string>} offeringNames
+     * @return {Promise<void>}
+     */
+    public deleteOfferings(offeringNames: Array<string>): Promise<void> {
+        return this._offeringManager.unregisterOfferings(offeringNames);
     }
 
     /**
      * Delete all registered offerings from the marketplace.
      */
-    public deleteAllOfferings() {
-        return this._offeringManager.unregisterOfferings(() => {
-            console.log('Deleted all offerings!');
-        });
+    public deleteAllOfferings(): Promise<void> {
+        return this._offeringManager.unregisterAllOfferings();
     }
 
     /**

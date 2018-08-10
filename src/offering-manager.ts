@@ -154,20 +154,62 @@ export class OfferingManager {
     }
 
     /**
-     * Check the list of offerings to register and register them on the marketplace.
+     * Register a given list of offerings based on identifiers.
+     * @param  {Array<string>} offeringNames
      * @return {Promise<any>}
      */
-    public registerOfferings(): Promise<void> {
+    public registerOfferings(offeringNames: Array<string>): Promise<void> {
+        // Remove duplicates
+        let names = offeringNames.filter(function(item, pos) {
+            return offeringNames.indexOf(item) == pos;
+        });
         return new Promise((resolve, reject) => {
             let promises = [];
             for (let i = 0; i < this._toRegister.length; i++) {
-                promises.push(this._provider.register(this._toRegister[i]).then(() => {
-                    console.log("Successfully registered offering " + this._toRegister[i].name);
-                    this._registered.push(this._toRegister[i]);
-                }, (err) => {
-                    console.log("Failed to register offering " + this._toRegister[i].name);
-                    // console.log(err);
-                }));
+                // Save i into local variable
+                let index = i;
+                if (this._toRegister[i] && names.indexOf(this._toRegister[i].name) > -1) {
+                    promises.push(this._provider.register(this._toRegister[i]).then(() => {
+                        console.log("Successfully registered offering " + this._toRegister[i].name);
+                        this._registered.push(this._toRegister[index]);
+                        // Set to undefined to remove later
+                        this._toRegister[index] = undefined;
+                    }, (err) => {
+                        console.log("Failed to register offering " + this._toRegister[i].name);
+                        // console.log(err);
+                    }));
+                }
+            }
+            Promise.all(promises).then(() => {
+                // Remove undefined elements from array
+                for (let i = 0; i < this._toRegister.length; i++) {
+                    if (!this._toRegister[i]) {
+                        this._toRegister.splice(i, 1);
+                        i--;
+                    }
+                }
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * Check the list of offerings to register and register them on the marketplace.
+     * @return {Promise<any>}
+     */
+    public registerAllOfferings(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            let promises = [];
+            for (let i = 0; i < this._toRegister.length; i++) {
+                if (this._toRegister[i]) {
+                    promises.push(this._provider.register(this._toRegister[i]).then(() => {
+                        console.log("Successfully registered offering " + this._toRegister[i].name);
+                        this._registered.push(this._toRegister[i]);
+                    }, (err) => {
+                        console.log("Failed to register offering " + this._toRegister[i].name);
+                        // console.log(err);
+                    }));
+                }
             }
             Promise.all(promises).then(() => {
                 this._toRegister = [];
@@ -177,21 +219,66 @@ export class OfferingManager {
     }
 
     /**
-     * Unregister all offerings currently registered on the marketplace.
-     * @param callback
+     * Remove a given list of offerings based on identifiers.
+     * @param {Array<string>} offeringNames
+     * @return {Promise<void>}
      */
-    public unregisterOfferings(callback) {
-        let promises = [];
-        for (let i = 0; i < this._registered.length; i++) {
-            promises.push(this._provider.delete(this._registered[i]).then(() => {
-                console.log("Successfully removed offering " + this._registered[i].name);
-            }, (err) => {
-                console.log("Failed to remove offering " + this._registered[i].name);
-            }));
-        }
-        Promise.all(promises).then(() => {
-            this._registered = [];
-            callback();
+    public unregisterOfferings(offeringNames: Array<string>): Promise<void> {
+        // Remove duplicates
+        let names = offeringNames.filter(function(item, pos) {
+            return offeringNames.indexOf(item) == pos;
+        });
+        return new Promise((resolve, reject) => {
+            let promises = [];
+            for (let i = 0; i < this._registered.length; i++) {
+                // Save i into local variable
+                let index = i;
+                if (this._registered[i] && names.indexOf(this._registered[i].name) > -1) {
+                    promises.push(this._provider.delete(this._registered[i]).then(() => {
+                        console.log("Successfully removed offering " + this._registered[i].name);
+                        this._toRegister.push(this._registered[index]);
+                        // Set to undefined to remove later
+                        this._registered[index] = undefined;
+                    }, (err) => {
+                        console.log("Failed to remove offering " + this._registered[i].name);
+                        // console.log(err);
+                    }));
+                }
+            }
+            Promise.all(promises).then(() => {
+                // Remove undefined elements from array
+                for (let i = 0; i < this._registered.length; i++) {
+                    if (!this._registered[i]) {
+                        this._registered.splice(i, 1);
+                        i--;
+                    }
+                }
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * Unregister all offerings currently registered on the marketplace.
+     * @return {Promise<void>}
+     */
+    public unregisterAllOfferings(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            let promises = [];
+            for (let i = 0; i < this._registered.length; i++) {
+                if (this._registered[i]) {
+                    promises.push(this._provider.delete(this._registered[i]).then(() => {
+                        this._toRegister.push(this._registered[i]);
+                        console.log("Successfully removed offering " + this._registered[i].name);
+                    }, (err) => {
+                        console.log("Failed to remove offering " + this._registered[i].name);
+                    }));
+                }
+            }
+            Promise.all(promises).then(() => {
+                this._registered = [];
+                resolve();
+            });
         });
     }
 
