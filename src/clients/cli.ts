@@ -116,51 +116,11 @@ function waitForCommand(api: Api, rl: any) {
 /**
  * Convert Things based on their URI.
  * @param {Api} api
- * @param {Array<string>} uri
+ * @param {Array<string>} uris
  * @return {Promise<any>}
  */
-function convertThings(api: Api, uri: Array<string>): Promise<any> {
-    return new Promise((resolve, reject) => {
-        let promises = [];
-        for (let i = 0; i < uri.length; i++) {
-            console.log('Getting thing at ' + uri[i]);
-            if (uri[i].startsWith('http')) {
-                promises.push(new Promise((resolve, reject) => {
-                    http.get(uri[i], (res) => {
-                        res.setEncoding("utf8");
-                        let body = "";
-                        res.on("data", data => {
-                            body += data;
-                        }).on("end", () => {
-                            resolve(body);
-                        });
-                    });
-                }));
-            } else if (uri[i].startsWith('coap')) {
-                promises.push(new Promise((resolve, reject) => {
-                    let req = coap.request(uri[i]);
-                    req.on('response', res => {
-                        let payload = res.payload.toString();
-                        resolve(payload);
-                    });
-                    req.end();
-                }));
-            } else {
-                // Assume URI is local
-                promises.push(new Promise((resolve, reject) => {
-                    fs.readFile(uri[i], "utf-8", (err, data) => {
-                        if (err) throw err;
-                        resolve(data);
-                    });
-                }));
-            }
-        }
-        // Call api with results
-        Promise.all(promises).then((tds) => {
-            api.convertThings(tds);
-            resolve();
-        });
-    });
+function convertThings(api: Api, uris: Array<string>): Promise<void> {
+    return api.convertThingsFromUris(uris);
 }
 
 /**

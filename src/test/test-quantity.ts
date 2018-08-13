@@ -38,7 +38,7 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/thing-list.txt'), (e
                         }).on("end", () => {
                             resolve(body);
                         });
-                    }).on('error', function(e) {
+                    }).on('error', function (e) {
                     });
                 }));
             } else if (thingUris[i].startsWith('coap')) {
@@ -63,17 +63,16 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/thing-list.txt'), (e
         // Call api with results
         Promise.all(promises).then((tds) => {
             console.log('Thing List Loaded');
-            try {
-                api.convertThings(tds);
+            api.convertThings(tds).then(() => {
                 console.log('Conversion made');
-            } catch (e) {
-                console.log('Thing conversion error:', e);
-            }
-            process.stdin.setRawMode(true);
-            process.stdin.resume();
-            process.stdin.on('data', () => {
-                console.log('Shutting down...');
-                process.exit(0);
+                process.stdin.setRawMode(true);
+                process.stdin.resume();
+                process.stdin.on('data', () => {
+                    console.log('Shutting down...');
+                    process.exit(0);
+                });
+            }).catch((err) => {
+                console.log('Thing conversion error:', err);
             });
         }).catch((err) => {
             console.log(err);

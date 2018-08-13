@@ -6,6 +6,11 @@ import {OfferingConverter} from "./offering-converter";
 import {Configuration, OfferingToThing} from "./configuration";
 import {SearchResult, SemanticSearcher} from "./semantic-searcher";
 
+import http = require('http');
+import https = require('https');
+import coap = require('coap');
+import fs = require('fs');
+
 export class Api {
 
     private static readonly CONFIG_SOURCE = "../config.json";
@@ -87,14 +92,79 @@ export class Api {
     }
 
     /**
-     * Register things on the marketplace. If there is no direct compatibility with the Offering model or if,
+     * Convert things to offerings from a list of TD URIs. Calls convertThings.
+     * @param {Array<string>} uris
+     * @return {Promise<void>}
+     */
+    public convertThingsFromUris(uris: Array<string>): Promise<void> {
+        return new Promise((resolve, reject) => {
+            let promises = [];
+            for (let i = 0; i < uris.length; i++) {
+                console.log('Getting thing at ' + uris[i]);
+                if (uris[i].startsWith('https')) {
+                    promises.push(new Promise((resolve, reject) => {
+                        https.get(uris[i], (res) => {
+                            res.setEncoding("utf8");
+                            let body = "";
+                            res.on("data", data => {
+                                body += data;
+                            }).on("end", () => {
+                                resolve(body);
+                            });
+                        });
+                    }));
+                } else if (uris[i].startsWith('http')) {
+                    promises.push(new Promise((resolve, reject) => {
+                        http.get(uris[i], (res) => {
+                            res.setEncoding("utf8");
+                            let body = "";
+                            res.on("data", data => {
+                                body += data;
+                            }).on("end", () => {
+                                resolve(body);
+                            });
+                        });
+                    }));
+                } else if (uris[i].startsWith('coap')) {
+                    promises.push(new Promise((resolve, reject) => {
+                        let req = coap.request(uris[i]);
+                        req.on('response', res => {
+                            let payload = res.payload.toString();
+                            resolve(payload);
+                        });
+                        req.end();
+                    }));
+                } else {
+                    // Assume URI is local
+                    promises.push(new Promise((resolve, reject) => {
+                        fs.readFile(uris[i], "utf-8", (err, data) => {
+                            if (err) throw err;
+                            resolve(data);
+                        });
+                    }));
+                }
+            }
+            Promise.all(promises).then((tds) => {
+                this.convertThings(tds).then(() => {
+                    resolve();
+                }).catch((err) => {
+                    reject(err);
+                });
+            }).catch((err) => {
+                reject(err);
+            });
+        });
+    }
+
+    /**
+     * Convert things to offerings. If there is no direct compatibility with the Offering model or if,
      * the API is configured to use additional features requiring it, a gateway is set up.
      * @param {Array<string>} tds JSON TDs (not parsed)
      * @return {Promise<any>}
      */
-    public convertThings(tds: Array<string>) {
+    public convertThings(tds: Array<string>): Promise<void> {
         if (!this._initComplete) {
-            throw 'ERROR: Config not initialized!';
+            return Promise.reject('ERROR: Config not initialized!');
         } else {
             // Parse all things
             let parsedThings: Array<Thing> = [];
@@ -127,7 +197,7 @@ export class Api {
             console.log(directRegistration.length, "things to register directly");
             console.log(gatewayRegistration.length, "things to register with gateway");
             this.convertThingsDirectly(directRegistration);
-            this.convertThingsWithGateway(gatewayRegistration);
+            return this.convertThingsWithGateway(gatewayRegistration);
         }
     }
 
@@ -277,57 +347,64 @@ export class Api {
      * Initialize or update the gateway to register incompatible things or to use advanced features.
      * @param {Array<Thing>} things
      */
-    private convertThingsWithGateway(things: Array<Thing>): void {
-        this._gateway.init().then((gateway) => {
-            if (this._config.gateway.useAggregate) {
-                // Identify identical things
-                let identicalThings: Array<Array<Thing>> = [];
-                for (let i = 0; i < things.length; i++) {
-                    let ok = false;
-                    for (let j = 0; j < identicalThings.length; j++) {
-                        if (ThingAnalyzer.areThingsIdentical(identicalThings[j][0], things[i])) {
-                            identicalThings[j].push(things[i]);
-                            ok = true;
-                        }
-                    }
-                    if (!ok) {
-                        identicalThings.push([things[i]]);
-                    }
-                }
-                // Register things by type
-                for (let i = 0; i < identicalThings.length; i++) {
-                    // Rename duplicates
-                    let fakeIndex = 0;
-                    while (this._alreadyUsedOfferingNames.indexOf(identicalThings[i][0].name) > -1) {
-                        let fakeIndexString = String(fakeIndex);
-                        if (fakeIndex === 0) {
-                            identicalThings[i][0].name = identicalThings[i][0].name + (++fakeIndex);
-                        } else {
-                            identicalThings[i][0].name = identicalThings[i][0].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
-                        }
-                    }
-                    this._alreadyUsedOfferingNames.push(identicalThings[i][0].name);
-                    // Once the name is unique, add to the gateway.
-                    this._gateway.addAggregatedThings(identicalThings[i]);
-                }
+    private convertThingsWithGateway(things: Array<Thing>): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!things || things.length === 0) {
+                resolve();
             } else {
-                for (let i = 0; i < things.length; i++) {
-                    // Rename duplicates
-                    let fakeIndex = 0;
-                    while (this._alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
-                        let fakeIndexString = String(fakeIndex);
-                        if (fakeIndex === 0) {
-                            things[i].name = things[i].name + (++fakeIndex);
-                        } else {
-                            things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
+                this._gateway.init().then((gateway) => {
+                    if (this._config.gateway.useAggregate) {
+                        // Identify identical things
+                        let identicalThings: Array<Array<Thing>> = [];
+                        for (let i = 0; i < things.length; i++) {
+                            let ok = false;
+                            for (let j = 0; j < identicalThings.length; j++) {
+                                if (ThingAnalyzer.areThingsIdentical(identicalThings[j][0], things[i])) {
+                                    identicalThings[j].push(things[i]);
+                                    ok = true;
+                                }
+                            }
+                            if (!ok) {
+                                identicalThings.push([things[i]]);
+                            }
                         }
+                        // Register things by type
+                        for (let i = 0; i < identicalThings.length; i++) {
+                            // Rename duplicates
+                            let fakeIndex = 0;
+                            while (this._alreadyUsedOfferingNames.indexOf(identicalThings[i][0].name) > -1) {
+                                let fakeIndexString = String(fakeIndex);
+                                if (fakeIndex === 0) {
+                                    identicalThings[i][0].name = identicalThings[i][0].name + (++fakeIndex);
+                                } else {
+                                    identicalThings[i][0].name = identicalThings[i][0].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
+                                }
+                            }
+                            this._alreadyUsedOfferingNames.push(identicalThings[i][0].name);
+                            // Once the name is unique, add to the gateway.
+                            this._gateway.addAggregatedThings(identicalThings[i]);
+                        }
+                    } else {
+                        for (let i = 0; i < things.length; i++) {
+                            // Rename duplicates
+                            let fakeIndex = 0;
+                            while (this._alreadyUsedOfferingNames.indexOf(things[i].name) > -1) {
+                                let fakeIndexString = String(fakeIndex);
+                                if (fakeIndex === 0) {
+                                    things[i].name = things[i].name + (++fakeIndex);
+                                } else {
+                                    things[i].name = things[i].name.slice(0, -1 * fakeIndexString.length) + (++fakeIndex);
+                                }
+                            }
+                            this._alreadyUsedOfferingNames.push(things[i].name);
+                        }
+                        gateway.addSingleThings(things);
                     }
-                    this._alreadyUsedOfferingNames.push(things[i].name);
-                }
-                gateway.addSingleThings(things);
+                    resolve();
+                }).catch((err) => {
+                    reject(err);
+                });
             }
-        }).catch((err) => {
-            console.log('ERROR:', err);
         });
     }
 }

@@ -130,34 +130,35 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/offering-list.txt'),
                 stringArray.push(serializeTD(things[i]));
             }
             // Convert them back
-            api.convertThings(stringArray);
-            // Register
-            api.registerAllOfferings().then(() => {
-                // Get list of the newly registered offering ids using the marketplace's reformatting strategy
-                let newIds = offeringIds.map((val) => {
-                    return api.getProviderId() + '-' + val.replace('-', '_').replace('-', '_');
-                });
-                getAndCompare(api.getConsumer(), offeringIds, newIds, new QualityTestErrors(), 0).then((errors: QualityTestErrors) => {
-                    console.log('--------------------------------------------------------------------');
-                    console.log('QUALITY TEST COMPLETE! Tested', errors.amountTested, 'offerings.');
-                    console.log('--------------------------------------------------------------------');
-                    console.log('Endpoint errors:', errors.endpoint);
-                    console.log('Input errors:', errors.input);
-                    console.log('Output errors:', errors.output);
-                    console.log('Spatial Extent errors:', errors.spatialExtent);
-                    console.log('License errors:', errors.license);
-                    console.log('Price errors:', errors.price);
-                    console.log('Category errors:', errors.category);
-                    console.log('--------------------------------------------------------------------');
-                    console.log('TOTAL ERRORS:', errors.totalErrors());
-                    console.log('OFFERINGS NOT REGISTERED:', errors.notRegistered);
-                    console.log('OFFERINGS DIFFERENT FROM ORIGINAL:', errors.different + '/' + errors.amountTested);
-                    console.log('--------------------------------------------------------------------');
-                    console.log('Press any key to delete offerings');
-                    process.stdin.setRawMode(true);
-                    process.stdin.resume();
-                    process.stdin.on('data', () => {
-                        api.deleteAllOfferings();
+            api.convertThings(stringArray).then(() => {
+                // Register
+                api.registerAllOfferings().then(() => {
+                    // Get list of the newly registered offering ids using the marketplace's reformatting strategy
+                    let newIds = offeringIds.map((val) => {
+                        return api.getProviderId() + '-' + val.replace('-', '_').replace('-', '_');
+                    });
+                    getAndCompare(api.getConsumer(), offeringIds, newIds, new QualityTestErrors(), 0).then((errors: QualityTestErrors) => {
+                        console.log('--------------------------------------------------------------------');
+                        console.log('QUALITY TEST COMPLETE! Tested', errors.amountTested, 'offerings.');
+                        console.log('--------------------------------------------------------------------');
+                        console.log('Endpoint errors:', errors.endpoint);
+                        console.log('Input errors:', errors.input);
+                        console.log('Output errors:', errors.output);
+                        console.log('Spatial Extent errors:', errors.spatialExtent);
+                        console.log('License errors:', errors.license);
+                        console.log('Price errors:', errors.price);
+                        console.log('Category errors:', errors.category);
+                        console.log('--------------------------------------------------------------------');
+                        console.log('TOTAL ERRORS:', errors.totalErrors());
+                        console.log('OFFERINGS NOT REGISTERED:', errors.notRegistered);
+                        console.log('OFFERINGS DIFFERENT FROM ORIGINAL:', errors.different + '/' + errors.amountTested);
+                        console.log('--------------------------------------------------------------------');
+                        console.log('Press any key to delete offerings');
+                        process.stdin.setRawMode(true);
+                        process.stdin.resume();
+                        process.stdin.on('data', () => {
+                            api.deleteAllOfferings();
+                        });
                     });
                 });
             });

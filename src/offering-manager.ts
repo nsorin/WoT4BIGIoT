@@ -189,6 +189,8 @@ export class OfferingManager {
                     }
                 }
                 resolve();
+            }).catch((err) => {
+                reject(err);
             });
         });
     }
@@ -214,6 +216,8 @@ export class OfferingManager {
             Promise.all(promises).then(() => {
                 this._toRegister = [];
                 resolve();
+            }).catch((err) => {
+                reject(err);
             });
         });
     }
@@ -254,6 +258,8 @@ export class OfferingManager {
                     }
                 }
                 resolve();
+            }).catch((err) => {
+                reject(err);
             });
         });
     }
@@ -278,6 +284,8 @@ export class OfferingManager {
             Promise.all(promises).then(() => {
                 this._registered = [];
                 resolve();
+            }).catch((err) => {
+                reject(err);
             });
         });
     }
