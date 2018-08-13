@@ -11,4 +11,6 @@ config.json
 testing-resource/quality-config.json
 testing-resource/quantity-config.json
 testing-resource/offering-list.txt
+testing-resource/convert-offering-ex-config.json
+testing-resource/convert-thing-ex-config.json
 testing-resource/thing-list.txt

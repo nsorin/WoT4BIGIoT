@@ -232,7 +232,7 @@ export class OfferingConverter {
         };
         obj[MetadataManager.LICENSE] = offering.license;
         obj[MetadataManager.CATEGORY] = offering.rdfAnnotation.uri;
-        obj[MetadataManager.SPATIAL_EXTENT] = {
+        obj[MetadataManager.SPATIAL_EXTENT] = offering.spatialExtent ? {
             [MetadataManager.CITY]: offering.spatialExtent.city,
             [MetadataManager.BOUNDARY]: offering.spatialExtent.boundary ? {
                 [MetadataManager.LAT_LONG_1]: {
@@ -244,7 +244,7 @@ export class OfferingConverter {
                     [MetadataManager.B_LONGITUDE]: offering.spatialExtent.boundary.l2.lng
                 }
             } : undefined
-        };
+        } : undefined;
     }
 
     /**
