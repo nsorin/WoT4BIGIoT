@@ -1,5 +1,5 @@
 {
-  "name": "WoT-Final",
+  "name": "wot-big-iot",
   "version": "0.0.1",
   "description": "Final implementation of the WoT4BIGIoT Thesis project",
   "dependencies": {
@@ -14,10 +14,15 @@
     "typescript-eslint-parser": "^16.0.0",
     "ws": "^5.1.1"
   },
+  "files": [
+    "dist/"
+  ],
+  "main": "dist/api.js",
+  "types": "dist/api.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "((git clone https://github.com/eclipse/thingweb.node-wot.git && cd thingweb.node-wot) || (cd thingweb.node-wot && git pull)) && npm install && npm run build && cd .. && (git clone https://github.com/nsorin/bigiot-js.git || (cd bigiot-js && git pull))",
+    "postinstall": "((git clone https://github.com/eclipse/thingweb.node-wot.git && cd thingweb.node-wot) || (cd thingweb.node-wot && git pull)) && npm install && npm run build && cd .. && (git clone https://github.com/nsorin/bigiot-js.git || (cd bigiot-js && git pull)) && cd .. && tsc",
     "cli": "node ./dist/clients/cli.js"
   }
 }
