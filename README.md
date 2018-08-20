@@ -5,7 +5,8 @@ TypeScript implementation of an application used to link W3C's WoT project and t
 ## Installation
 
 After cloning the repository, run ```npm install``` to install dependencies. This will also clone two other projects from github
-and install them. Make sure you meet the requirements for the https://github.com/eclipse/thingweb.node-wot project.
+and install them. Make sure you meet the requirements for the https://github.com/eclipse/thingweb.node-wot project, which requires windows build tools,
+and make sure the typescript compiler is installed on your machine.
 
 Run ```npm run build``` or simply ```tsc``` at the root of the project to build it.
 
@@ -18,7 +19,7 @@ In that case, be sure to supply the location of the config file when initializin
 You can initialize the API with the static ```Api.getApi()``` method:
 
 ```typescript
-import {Api} from "wot-big-iot";
+import {Api} from "./wot-big-iot";
 
 Api.getApi().then((api: Api) => {
     // Your code here
@@ -28,10 +29,72 @@ Api.getApi().then((api: Api) => {
 If you want to provide a specific config file, pass it as parameter of the ```getApi()``` method:
 
 ```typescript
+import {Api} from "./wot-big-iot";
+
 Api.getApi("./path/relative/to/api/location").then((api: Api) => {
     // Your code here
 };
 ```
+
+To convert offerings to Things, one call to ```convertOfferings``` will return a Promise which resolves to a list of converted node-wot Things. The Things can be used with node-wot like any other.
+
+```typescript
+import {Api} from "./wot-big-iot";
+import {Thing, serializeTD} from "./wot-big-iot/thingweb.node-wot/packages/td-tools";
+
+Api.getApi().then((api: Api) => {
+    // Retrieve offerings by identifier and convert them
+    api.convertOfferings([
+        'Thingful-Thingful-barcelona_air_temperature',
+        'Thingful-Thingful-barcelona_air_quality_no2',
+        'Thingful-Thingful-barcelona_air_quality_co',
+        'Simularia-WANDA_provider-TorinoAirQuality',
+        'Bosch_CR-AirQualityDataService-AirQualityData_Offering',
+        'Bosch_CR-AirQualityDataService-WeatherData_Offering'
+        ]).then((things: Array<Thing>) => {
+
+        // Save TDs on disk
+        for (let i = 0; i < things.length; i++) {
+            fs.writeFile(things[i].name + '.json', serializeTD(things[i]));
+        }
+    });
+};
+```
+
+Depending on the configuration, one or more Things can be created:
+- 6 Things (one for each offering) in 'OFFERING_TO_THING' conversion strategy
+- 3 Things (one for each provider) in 'PROVIDER_TO_THING' conversion strategy
+- 1 Thing (one for the subset of the marketplace) in 'MARKETPLACE_TO_THING' conversion strategy
+
+
+To convert Things to Offerings and then register them, two steps are necessary: the conversion / set up of the gateway if needed, and the registration.
+
+```typescript
+import {Api} from "./wot-big-iot";
+
+Api.getApi().then((api: Api) => {
+    // Retrieve offerings by identifier and convert them
+    api.convertThings([
+        'http://iot-example.test/thing1',
+        'http://iot-example.test/thing2',
+        'http://iot-example.test/thing3',
+        'http://iot-example.test/thing4'
+        ]).then(() => {
+
+        let offerings = api.getOfferingsToRegister();
+        // Do something with offerings, like editing metadata
+        // ...
+
+        // Register all offerings at once
+        api.registerAllOfferings().then(() => {
+            // Do something else
+        });
+
+    });
+};
+```
+
+The name and amount of offerings produced will depend on configuration.
 
 Code samples using the API are available in the ```examples``` sub directory.
 

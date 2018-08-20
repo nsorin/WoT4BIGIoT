@@ -1,7 +1,5 @@
 import readline = require('readline');
 import fs = require('fs');
-import http = require('http');
-import coap = require('coap');
 import path = require('path');
 import {Api} from '../api';
 import {MetadataManager} from '../metadata-manager';
