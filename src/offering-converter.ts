@@ -55,8 +55,7 @@ export class OfferingConverter {
     public convertOne(offeringId: string): Promise<any> {
         return new Promise((resolve, reject) => {
             // Get the offering from the marketplace
-            this._consumer.get(offeringId).then((data) => {
-                let offering = data.offering;
+            this._consumer.get(offeringId).then((offering) => {
                 let thing = new Thing();
                 thing[OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.OFFERING_TYPE];
                 thing.name = offering.name ? offering.name : offering.id;
@@ -87,12 +86,12 @@ export class OfferingConverter {
             for (let i = 0; i < offeringIds.length; i++) {
                 promises.push(this._consumer.get(offeringIds[i]));
             }
-            Promise.all(promises).then((values) => {
+            Promise.all(promises).then((offerings) => {
                 let thing = new Thing();
                 thing.name = "marketplace"; // Find a better nale / use constants
-                for (let i = 0; i < values.length; i++) {
+                for (let i = 0; i < offerings.length; i++) {
                     try {
-                        this.generateInteraction(values[i].offering, thing);
+                        this.generateInteraction(offerings[i], thing);
                     } catch (e) {
                         console.log('Error in interaction generation:', e);
                     }
@@ -117,12 +116,12 @@ export class OfferingConverter {
             for (let i = 0; i < offeringIds.length; i++) {
                 promises.push(this._consumer.get(offeringIds[i]));
             }
-            Promise.all(promises).then((values) => {
+            Promise.all(promises).then((offerings) => {
                 let providerMap: any = {};
-                for (let i = 0; i < values.length; i++) {
-                    if (!providerMap.hasOwnProperty(values[i].offering.provider.id)) {
+                for (let i = 0; i < offerings.length; i++) {
+                    if (!providerMap.hasOwnProperty(offerings[i].provider.id)) {
                         // Init a new thing for this provider if it does not exist yet
-                        let providerId = values[i].offering.provider.id;
+                        let providerId = offerings[i].provider.id;
                         providerMap[providerId] = new Thing();
                         providerMap[providerId].name = providerId;
                         providerMap[providerId][OfferingConverter.SEMANTIC_TYPE] = [MetadataManager.PROVIDER_TYPE];
@@ -132,7 +131,7 @@ export class OfferingConverter {
                             + OfferingConverter.PROVIDER_URI + providerId;
                     }
                     try {
-                        this.generateInteraction(values[i].offering, providerMap[values[i].offering.provider.id], true);
+                        this.generateInteraction(offerings[i], providerMap[offerings[i].provider.id], true);
                     } catch (e) {
                         console.log('Error in interaction generation:', e);
                     }
