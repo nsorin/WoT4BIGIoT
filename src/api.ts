@@ -307,16 +307,16 @@ export class Api {
     }
 
     /**
-     * Get the current provider's id.
-     * @return {string}
+     * Get the current provider.
+     * @return {any}
      */
-    public getProviderId(): string {
-        return this._offeringManager.getProviderId();
+    public getProvider(): any {
+        return this._offeringManager.provider;
     }
 
     /**
      * Get the current consumer.
-     * @return {string}
+     * @return {any}
      */
     public getConsumer(): any {
         return this._offeringConverter.consumer;

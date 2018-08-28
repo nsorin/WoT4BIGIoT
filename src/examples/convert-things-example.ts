@@ -52,7 +52,7 @@ Api.getApi(CONFIG_SOURCE).then((api: Api) => {
             console.log('All offerings registered!');
             // We can now use bigiot-js to get the registered offerings on the marketplace
             // The API already created a consumer, we can reuse it
-            api.getConsumer().subscribe(api.getProviderId() + '-MyParking_Read').then((subscription) => {
+            api.getConsumer().subscribe(api.getProvider().id + '-MyParking_Read').then((subscription) => {
                 api.getConsumer().access(subscription, {}).then((result) => {
                     console.log('Got results:');
                     console.log(result);

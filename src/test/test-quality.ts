@@ -135,7 +135,7 @@ fs.readFile(path.resolve(__dirname, '../../testing-resource/offering-list.txt'),
                 api.registerAllOfferings().then(() => {
                     // Get list of the newly registered offering ids using the marketplace's reformatting strategy
                     let newIds = offeringIds.map((val) => {
-                        return api.getProviderId() + '-' + val.replace('-', '_').replace('-', '_');
+                        return api.getProvider().id + '-' + val.replace('-', '_').replace('-', '_');
                     });
                     getAndCompare(api.getConsumer(), offeringIds, newIds, new QualityTestErrors(), 0).then((errors: QualityTestErrors) => {
                         console.log('--------------------------------------------------------------------');

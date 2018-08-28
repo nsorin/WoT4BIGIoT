@@ -302,8 +302,8 @@ export class OfferingManager {
      * Get the current provider's id.
      * @return {string}
      */
-    public getProviderId(): string {
-        return this._provider.id;
+    get provider() {
+        return this._provider;
     }
 
     /**
