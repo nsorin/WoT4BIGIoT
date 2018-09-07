@@ -31,6 +31,8 @@ for (let i = 0; i < iterations; i++) {
                 m3lite: "http://purl.org/iot/vocab/m3-lite#"
             }
         ];
+        thing['https://schema.org/address'] = 'Hamburg';
+        thing['https://schema.org/category'] = 'urn:big-iot:ParkingSiteCategory';
 
         thing.addProperty('status', {
             writable: false,
@@ -44,10 +46,10 @@ for (let i = 0; i < iterations; i++) {
             type: "number",
             const: false,
             label: 'Light intensity',
-            value: 500,
+            value: getRandomInt(1000),
             '@type': ['m3lite:LightSensor']
         }).addProperty('position', {
-            writable: false, type: "object", const: false, label: 'Longitude', value: {latitude: 25, longitude: 5},
+            writable: false, type: "object", const: false, label: 'Longitude', value: {latitude: 53.3 + Math.random()/2, longitude: 9.7 + Math.random()/2},
             properties: {
                 latitude: {type: "number", '@type': ['schema:latitude']},
                 longitude: {type: "number", '@type': ['schema:longitude']},
@@ -68,4 +70,8 @@ for (let i = 0; i < iterations; i++) {
         });
         thing.expose();
     });
+}
+
+function getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
 }
