@@ -1,6 +1,7 @@
 /**
  * Script used for testing purposes. Takes a number n as parameter, which corresponds to the amount of identical things
  * to expose.
+ * convert_things http://localhost:8000/MyParking http://localhost:8001/MyParking http://localhost:8002/MyParking http://localhost:8003/MyParking http://localhost:8004/MyParking
  */
 
 const node_wot = require('../thingweb.node-wot/packages/core');
@@ -57,13 +58,13 @@ for (let i = 0; i < iterations; i++) {
         }).addAction('doParkingReservation', {}).addAction('setParkingSpaceAvailable', {})
             .setActionHandler('doParkingReservation', (params) => {
                 return new Promise((resolve, reject) => {
-                    thing.properties['status'].set('occupied').then(() => {
+                    thing.properties['status'].write('occupied').then(() => {
                         resolve();
                     });
                 });
             }).setActionHandler('setParkingSpaceAvailable', (params) => {
             return new Promise((resolve, reject) => {
-                thing.properties['status'].set('available').then(() => {
+                thing.properties['status'].write('available').then(() => {
                     resolve();
                 });
             });
